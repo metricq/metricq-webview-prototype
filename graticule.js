@@ -16,48 +16,63 @@ function Graticule(ctx, offsetDimension)
     this.series.push(newSeries);
     return newSeries;
   };
-  /* broken, don't call it */
-  this.drawGrid = function(pixelsLeft, pixelsBottom)
+  this.figureOutLogarithmicSteps = function(rangeStart, rangeEnd, maxStepsAllowed)
   {
-    ctx.fillStyle = "#2020f0";
+    var deltaRange = rangeEnd - rangeStart;
+    // due to floating point errors we have to increment deltaRange slightly
+    // so as to arrive at the correct logarithmic value
+    var powerTen = Math.floor(Math.log(deltaRange * 1.0000000001)/Math.log(10));
+    var stepSize = Math.pow(10, powerTen);
+    if((deltaRange / stepSize) > maxStepsAllowed)
+    {
+      if((deltaRange / (stepSize * 5)) < maxStepsAllowed)
+      {
+        stepSize *= 5;
+      } else if((deltaRange / (stepSize * 10)) < maxStepsAllowed)
+      {
+        stepSize *= 10;
+      }
+    } else if((deltaRange / stepSize * 5) < maxStepsAllowed)
+    {
+      if((deltaRange / (stepSize / 10)) < maxStepsAllowed)
+      {
+        stepSize /= 10;
+      }
+      if((deltaRange / (stepSize / 5)) < maxStepsAllowed)
+      {
+        stepSize /= 5;
+      }
+    }
+    var firstStep = rangeStart + (stepSize - (rangeStart % stepSize));
+    var stepsArr = new Array()
+    for(var i = firstStep; i < rangeEnd; i+=stepSize)
+    {
+      stepsArr.push(i);
+    }
+    return stepsArr;
+  };
+  
+  this.drawGrid = function(timeRange, valueRange, timePerPixel, valuesPerPixel)
+  {
+    ctx.fillStyle = "rgba(192,192,192,0.5)";
     ctx.font = "14px Sans";
-    var everyThatManyPixels = 40;
-    var timeStretch = this.timeConstraints[1] - this.timeConstraints[0];
-    var minMaxTimeInterval = [this.graticuleDimensions[2] / everyThatManyPixels * 0.8, this.graticuleDimensions[2] / everyThatManyPixels * 1.6];
-    for(var i = 0; i < minMaxTimeInterval.length; ++i)
+    var minDistanceBetweenGridLines = 40;
+    var maxStepsCount = Math.floor(this.graticuleDimensions[2] / minDistanceBetweenGridLines);
+    var xAxisSteps = this.figureOutLogarithmicSteps(timeRange[0], timeRange[1], maxStepsCount);
+    for(var i = 0; i < xAxisSteps[i]; ++i)
     {
-      minMaxTimeInterval[i] = timeStretch / minMaxTimeInterval[i];
-    }
-    var possibleTimeIntervals = [1, 15, 30, 60, 300, 900, 1800, 3600, 7200, 10800, 43200, 86400];
-    var chosenTimeInterval = 0;
-    for(var i = 1; i < possibleTimeIntervals.length; ++i)
-    {
-      if(possibleTimeIntervals[i] < minMaxTimeInterval[0])
-      {
-        continue;
-      } else
-      {
-        chosenTimeInterval = i;
-        break;
-      }
-      
-    }
-    chosenTimeInterval = possibleTimeIntervals[chosenTimeInterval];
-    for(var i = this.timeConstraints[0] - (this.timeConstraints[0] % chosenTimeInterval); i < this.timeConstraints[1]; i += chosenTimeInterval)
-    {
-      if(i >= this.timeConstraints[0])
-      {
-        var x = this.graticuleDimensions[0] + (i - this.timeConstraints[0]) * this.widthPerSecond;
-        ctx.fillRect( x, this.graticuleDimensions[1], 2, this.graticuleDimensions[3] + pixelsBottom / 4 );
-        ctx.fillText(dateToHHMMStr(new Date(i * 1000)), x - 20, this.graticuleDimensions[1] + this.graticuleDimensions[3] + pixelsBottom / 2 );
-      }
+      var x = this.graticuleDimensions[0] + ((xAxisSteps[i] - timeRange[0]) / timePerPixel);
+      ctx.fillRect( x, this.graticuleDimensions[1], 2, this.graticuleDimensions[3]);
+      ctx.fillText(dateToHHMMStr(new Date(xAxisSteps[i])), x - 20, this.graticuleDimensions[1] + this.graticuleDimensions[3] + 20);
     }
 
-    ctx.fillStyle = "#f02020";
-    for(var i = 0; i < this.graticuleDimensions[3]; i += everyThatManyPixels)
+    maxStepsCount = Math.floor(this.graticuleDimensions[3] / minDistanceBetweenGridLines);
+    var yAxisSteps = this.figureOutLogarithmicSteps(valueRange[0], valueRange[1], maxStepsCount);
+    for(var i = 0; i < yAxisSteps[i]; ++i)
     {
-      ctx.fillRect(this.graticuleDimensions[0] - pixelsLeft, i, this.graticuleDimensions[2] + pixelsLeft, 2);
-      ctx.fillText(Math.round((this.valueSubtract + ((this.graticuleDimensions[3] - i) / this.valueMultiply)) * 100) / 100, this.graticuleDimensions[0] - pixelsLeft, i + 14);
+      var y = this.graticuleDimensions[3] - ((yAxisSteps[i] - valueRange[0]) / valuesPerPixel) + this.graticuleDimensions[1];
+      ctx.fillRect( this.graticuleDimensions[0], y, this.graticuleDimensions[2], 2);
+      ctx.fillText(yAxisSteps[i], this.graticuleDimensions[0] - 40, y + 4);
     }
   }
   this.draw = function()
@@ -71,10 +86,14 @@ function Graticule(ctx, offsetDimension)
         valueRange = this.figureOutValueRange();
     var timePerPixel = (timeRange[1] - timeRange[0]) / this.graticuleDimensions[2],
         valuesPerPixel = (valueRange[1] - valueRange[0]) / this.graticuleDimensions[3];
+    ctx.clearRect(this.graticuleDimensions[0], this.graticuleDimensions[1],
+                  this.graticuleDimensions[2], this.graticuleDimensions[3]);
+    this.drawGrid(timeRange, valueRange, timePerPixel, valuesPerPixel);
     for(var i = 0; i < this.series.length; ++i)
     {
       var pointWidth = 2;
       var halfPointWidth = 1;
+      var drawALine = true;
       if(this.series[i].styleOptions)
       {
         if(this.series[i].styleOptions.color)
@@ -85,6 +104,14 @@ function Graticule(ctx, offsetDimension)
         {
           pointWidth = this.series[i].styleOptions.width;
         }
+        if(this.series[i].styleOptions.connect)
+        {
+          drawALine = true;
+          if(this.series[i].styleOptions.color)
+          {
+            this.ctx.strokeStyle = this.series[i].styleOptions.color;
+          }
+        }
       }
       halfPointWidth = Math.round(pointWidth / 2);
       
@@ -92,7 +119,23 @@ function Graticule(ctx, offsetDimension)
       {
         x = this.graticuleDimensions[0] + Math.round((this.series[i].points[j].time - timeRange[0]) / timePerPixel);
         y = this.graticuleDimensions[1] + (this.graticuleDimensions[3] - Math.round((this.series[i].points[j].value - valueRange[0]) / valuesPerPixel));
+        if(drawALine)
+        {
+          if(0 == j)
+          {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+          } else
+          {
+            ctx.lineTo(x,y);
+          }
+        }
         ctx.fillRect(x - halfPointWidth, y - halfPointWidth, pointWidth, pointWidth)
+      }
+      if(drawALine)
+      {
+        ctx.closePath();
+        ctx.stroke();
       }
     }
   }
