@@ -38,10 +38,17 @@ function processMetricQData(datapointsJSON)
     {
       options.color = "#d0d000";
     }
-    var latestSeries = mainGraticule.addSeries(metric.target, options);
+    var mySeries = mainGraticule.getSeries(metric.target);
+    if(!mySeries)
+    {
+      mySeries = mainGraticule.addSeries(metric.target, options);
+    } else
+    {
+      mySeries.clear();
+    }
     for(var j = 0; j < metric.datapoints.length; ++j)
     {
-      latestSeries.addPoint(new Point(metric.datapoints[j][1], metric.datapoints[j][0]));
+      mySeries.addPoint(new Point(metric.datapoints[j][1], metric.datapoints[j][0]));
     }
   }
   mainGraticule.draw();

@@ -5,6 +5,36 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
   this.pixelsLeft = paramPixelsLeft;
   this.pixelsBottom = paramPixelsBottom;
   this.series = new Array();
+  this.clearSeries = function(seriesSpecifier)
+  {
+    var curSeries = this.getSeries(seriesSpecifier);
+    if(curSeries)
+    {
+      curSeries.clear();
+      return curSeries;
+    }
+    return undefined;
+  };
+  this.getSeries = function(seriesSpecifier)
+  {
+    if("number" == (typeof seriesSpecifier))
+    {
+      if((0 <= seriesSpecifier) && (this.series.length > seriesSpecifier))
+      {
+        return this.series[seriesSpecifier];
+      }
+    } else
+    {
+      for(var i = 0; i < this.series.length; ++i)
+      {
+        if(seriesSpecifier === this.series[i].name)
+        {
+          return this.series[i];
+        }
+      }
+    }
+    return undefined;
+  };
   this.addSeries = function(seriesName, styleOptions)
   {
     var newSeries = new Series(seriesName, styleOptions);
@@ -72,7 +102,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
         ctx.fillText(yAxisSteps[i], this.graticuleDimensions[0] - this.pixelsLeft, y + 4);
       }
     }
-  }
+  };
   this.draw = function()
   {
     if(0 == this.series.length)
@@ -136,7 +166,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
         ctx.closePath();
       }
     }
-  }
+  };
   this.figureOutTimeRange = function ()
   {
     if(0 == this.series.length)
@@ -157,7 +187,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
       }
     }
     return timeRange;
-  }
+  };
   this.figureOutValueRange = function ()
   {
     if(0 == this.series.length)
@@ -181,13 +211,18 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
     valueRange[0] *= 0.9;
     valueRange[1] *= 1.1;
     return valueRange;
-  }
+  };
 }
 function Series(paramName, paramStyleOptions)
 {
   this.points = new Array();
   this.name = paramName;
   this.styleOptions = paramStyleOptions;
+  this.clear = function ()
+  {
+    delete this.points;
+    this.points = new Array();
+  };
   this.addPoint = function (newPoint) {
     if(0 == this.points.length)
     {
@@ -252,7 +287,7 @@ function Series(paramName, paramStyleOptions)
         min = this.points[i].value;
       } else if(this.points[i].value > max)
       {
-        max = this.points[i].value = max;
+        max = this.points[i].value;
       }
     }
     return [min, max];
