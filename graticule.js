@@ -75,15 +75,15 @@ function Graticule(ctx, offsetDimension)
     {
       var pointWidth = 2;
       var halfPointWidth = 1;
-      if(this.series.styleOptions)
+      if(this.series[i].styleOptions)
       {
-        if(this.series.styleOptions.color)
+        if(this.series[i].styleOptions.color)
         {
-          this.ctx.fillColor = this.series.styleOptions.color;
+          this.ctx.fillStyle = this.series[i].styleOptions.color;
         }
-        if(this.series.styleOptinos.width)
+        if(this.series[i].styleOptions.width)
         {
-          pointWidth = this.series.styleOptions.width;
+          pointWidth = this.series[i].styleOptions.width;
         }
       }
       halfPointWidth = Math.round(pointWidth / 2);
@@ -91,7 +91,7 @@ function Graticule(ctx, offsetDimension)
       for(var j = 0,x,y; j < this.series[i].points.length; ++j)
       {
         x = this.graticuleDimensions[0] + Math.round((this.series[i].points[j].time - timeRange[0]) / timePerPixel);
-        y = this.graticuleDimensions[1] + Math.round((this.series[i].points[j].value - valueRange[0]) / valuesPerPixel);
+        y = this.graticuleDimensions[1] + (this.graticuleDimensions[3] - Math.round((this.series[i].points[j].value - valueRange[0]) / valuesPerPixel));
         ctx.fillRect(x - halfPointWidth, y - halfPointWidth, pointWidth, pointWidth)
       }
     }

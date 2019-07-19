@@ -14,13 +14,22 @@ function processMetricQData(datapointsJSON)
   var graticule = new Graticule(ctx, [0, 0, canvasDimensions[0], canvasDimensions[1]]);
   for(var i = 0; i < datapointsJSON.length; ++i)
   {
-    var latestSeries = graticule.addSeries({
+    var options = {
       color: '#ff0000',
       width: 6
-    });
-    for(var j = 0; j < datapointsJSON[i].datapoints.length; ++j)
+    };
+    var metric = datapointsJSON[i];
+    if(metric.target.lastIndexOf("min") == metric.target.length - 3)
     {
-      latestSeries.addPoint(new Point(datapointsJSON[i].datapoints[j][1], datapointsJSON[i].datapoints[j][0]));
+      options.color = "#00ff00";
+    } else if(metric.target.lastIndexOf("avg") == metric.target.length - 3)
+    {
+      options.color = "#d0d000";
+    }
+    var latestSeries = graticule.addSeries(options);
+    for(var j = 0; j < metric.datapoints.length; ++j)
+    {
+      latestSeries.addPoint(new Point(metric.datapoints[j][1], metric.datapoints[j][0]));
     }
   }
   graticule.draw();
