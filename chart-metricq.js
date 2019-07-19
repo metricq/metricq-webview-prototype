@@ -3,6 +3,7 @@ var masterWrapper;
 var ctx;
 var canvasDimensions = [800, 500]
 var mainGraticule;
+var timers = new Object();
 function init()
 {
   var curDate = new Date();
@@ -46,12 +47,41 @@ function processMetricQData(datapointsJSON)
     {
       mySeries.clear();
     }
+    timers.parsing.preprocessingEnded = (new Date()).getTime();
     for(var j = 0; j < metric.datapoints.length; ++j)
     {
       mySeries.addPoint(new Point(metric.datapoints[j][1], metric.datapoints[j][0]));
     }
+    timers.parsing.end = (new Date()).getTime();
   }
+  timers.drawing = {
+    start: (new Date()).getTime(),
+    end: 0
+  };
   mainGraticule.draw();
+  timers.drawing.end = (new Date()).getTime();
+  showTimers();
+}
+
+function showTimers()
+{
+  var deltaTime = 0;
+  var timingsString = "";
+  deltaTime = timers.ajax.done - timers.ajax.presend;
+  timingsString += "Ajax " + deltaTime + " ms";
+  if(timers.db)
+  {
+    deltaTime = timers.db.duration;
+    timingsString += ", DB " + deltaTime + " ms";
+  }
+  deltaTime = timers.parsing.end - timers.parsing.start;
+  timingsString += ", Parsing " + deltaTime + " ms";
+  deltaTime = timers.drawing.end - timers.drawing.start;
+  timingsString += ", Drawing " + deltaTime + " ms";
+
+  var timingsEle = document.querySelectorAll(".timings_text")[0];
+  timingsEle.removeChild(timingsEle.firstChild);
+  timingsEle.appendChild(document.createTextNode(timingsString));
 }
 
 function createChart()
@@ -69,9 +99,13 @@ function createChart()
   var canvasEle = document.createElement("canvas");
   canvasEle.width = canvasSize[0] + pixelsLeft;
   canvasEle.height = canvasSize[1] + pixelsBottom;
+  var timingsEle = document.createElement("div");
+  timingsEle.setAttribute("class", "timings_text");
+  timingsEle.appendChild(document.createTextNode("Zeiterfassung..."));
 
   wrapperEle.appendChild(headingEle);
   wrapperEle.appendChild(canvasEle);
+  wrapperEle.appendChild(timingsEle);
   masterWrapper.appendChild(wrapperEle);
   return canvasEle.getContext("2d");
 }
@@ -97,12 +131,24 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
   var req = new XMLHttpRequest();
   req.open("POST", "proxy.php", true);
   req.onreadystatechange = function (callMe) { return function(obj) {
+    if(1 == obj.target.readyState)
+    {
+      timers.ajax.opened = (new Date()).getTime();
+    }
     if(4 == obj.target.readyState)
     {
+      timers.ajax.done = (new Date()).getTime();
       var jsonObj;
+      timers.parsing = {
+        start: (new Date()).getTime()
+      };
       try
       {
         jsonObj = JSON.parse(obj.target.responseText);
+        if(jsonObj && jsonObj[0].time_measurements.db)
+        {
+          timers.db.duration = jsobObj[0].time_measurements.db * 1000;
+        }
       } catch(exc) {}
       if(jsonObj)
       {
@@ -110,6 +156,9 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
       }
     }
   };}(callbackFunc);
+  timers.ajax = {
+    presend: (new Date()).getTime()
+  };
   req.send("{\n  \"range\":{  \n    \"from\":\"" + from + "\",\n    \"to\":\"" + to + "\"\n  },\n  \"intervalMs\":" + intervalMs + ",\n  \"targets\":[  \n    {  \n      \"target\":\"" + target + "\"\n    }\n  ]\n}");
 }
 document.addEventListener("DOMContentLoaded", init);
