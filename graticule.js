@@ -5,6 +5,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
   this.pixelsLeft = paramPixelsLeft;
   this.pixelsBottom = paramPixelsBottom;
   this.series = new Array();
+  this.bands = new Array();
   this.clearSeries = function(seriesSpecifier)
   {
     var curSeries = this.getSeries(seriesSpecifier);
@@ -40,6 +41,12 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
     var newSeries = new Series(seriesName, styleOptions);
     this.series.push(newSeries);
     return newSeries;
+  };
+  this.addBand = function(bandName, styleOptions)
+  {
+    var newBand = new Band(bandName, styleOptions);
+    this.bands.push(newBand);
+    return newBand;
   };
   this.figureOutLogarithmicSteps = function(rangeStart, rangeEnd, maxStepsAllowed)
   {
@@ -117,11 +124,48 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
     ctx.clearRect(this.graticuleDimensions[0] - this.pixelsLeft, this.graticuleDimensions[1],
                   this.graticuleDimensions[2] + this.pixelsLeft, this.graticuleDimensions[3] + this.pixelsBottom);
     this.drawGrid(timeRange, valueRange, timePerPixel, valuesPerPixel);
+    this.drawSeries(timeRange, valueRange, timePerPixel, valuesPerPixel);
+    this.drawBands(timeRange, valueRange, timePerPixel, valuesPerPixel);
+  }
+  this.drawBands = function(timeRange, valueRange, timePerPixel, valuesPerPixel)
+  {
+    for(var i = 0; i < this.bands.length; ++i)
+    {
+      if(this.bands[i].styleOptions)
+      {
+        if(this.bands[i].styleOptions.color)
+        {
+          this.ctx.fillStyle = this.bands[i].styleOptions.color;
+        }
+      }
+      
+      for(var j = 0,x,y; j < this.bands[i].points.length; ++j)
+      {
+        x = this.graticuleDimensions[0] + Math.round((this.bands[i].points[j].time - timeRange[0]) / timePerPixel);
+        y = this.graticuleDimensions[1] + (this.graticuleDimensions[3] - Math.round((this.bands[i].points[j].value - valueRange[0]) / valuesPerPixel));
+        if(0 == j)
+        {
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+        } else
+        {
+          ctx.lineTo(x,y);
+        }
+      }
+      if(0 < this.bands[i].points.length)
+      {
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  }
+  this.drawSeries = function(timeRange, valueRange, timePerPixel, valuesPerPixel)
+  {
     for(var i = 0; i < this.series.length; ++i)
     {
       var pointWidth = 2;
       var halfPointWidth = 1;
-      var drawALine = true;
+      var drawALine = false;
       if(this.series[i].styleOptions)
       {
         if(this.series[i].styleOptions.color)
@@ -186,6 +230,18 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
         timeRange[1] = curRange[1];
       }
     }
+    for(var i = 1; i < this.bands.length; ++i)
+    {
+      var curRange = this.bands[i].getTimeRange();
+      if(curRange[0] < timeRange[0])
+      {
+        timeRange[0] = curRange[0];
+      }
+      if(curRange[1] > timeRange[1])
+      {
+        timeRange[1] = curRange[1];
+      }
+    }
     return timeRange;
   };
   this.figureOutValueRange = function ()
@@ -207,11 +263,63 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
         valueRange[1] = curRange[1];
       }
     }
+    for(var i = 1; i < this.bands.length; ++i)
+    {
+      var curRange = this.bands[i].getValueRange();
+      if(curRange[0] < valueRange[0])
+      {
+        valueRange[0] = curRange[0];
+      }
+      if(curRange[1] > valueRange[1])
+      {
+        valueRange[1] = curRange[1];
+      }
+    }
     // add wiggle room
     valueRange[0] *= 0.9;
     valueRange[1] *= 1.1;
     return valueRange;
   };
+}
+function Band(paramName, paramStyleOptions)
+{
+  this.points = new Array();
+  this.name = paramName;
+  this.styleOptions = paramStyleOptions;
+  this.addPoint = function (newPoint)
+  {
+    this.points.push(newPoint);
+    return newPoint;
+  }
+  this.getTimeRange = function()
+  {
+    if(0 == this.points.length)
+    {
+      return [0, 0];
+    } else
+    {
+      return [this.points[0].time, this.points[this.points.length - 1].time];
+    }
+  }
+  this.getValueRange = function()
+  {
+    if(0 == this.points.length)
+    {
+      return [0, 0];
+    }
+    var min = this.points[0].value, max = this.points[0].value;
+    for(var i = 1; i < this.points.length; ++i)
+    {
+      if(this.points[i].value < min)
+      {
+        min = this.points[i].value;
+      } else if(this.points[i].value > max)
+      {
+        max = this.points[i].value;
+      }
+    }
+    return [min, max];
+  }
 }
 function Series(paramName, paramStyleOptions)
 {
@@ -223,8 +331,8 @@ function Series(paramName, paramStyleOptions)
     delete this.points;
     this.points = new Array();
   };
-  this.addPoint = function (newPoint) {
-    if(0 == this.points.length)
+  this.addPoint = function (newPoint, isBigger) {
+    if(isBigger || 0 == this.points.length)
     {
       this.points.push(newPoint);
       return newPoint;
@@ -297,6 +405,10 @@ function Point(paramTime, paramValue)
 {
   this.time = paramTime;
   this.value = paramValue;
+  this.clone = function ()
+  {
+    return new Point(this.time, this.value);
+  }
 }
 function dateToHHMMStr(curDate)
 {

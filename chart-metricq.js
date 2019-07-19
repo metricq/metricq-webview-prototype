@@ -24,36 +24,51 @@ function processMetricQData(datapointsJSON)
   {
     mainGraticule = new Graticule(ctx, [45, 40, canvasDimensions[0] - 45, canvasDimensions[1] - 40], 45, 40);
   }
+  timers.parsing.preprocessingEnded = (new Date()).getTime();
+  var distinctMetrics = new Object();
   for(var i = 0; i < datapointsJSON.length; ++i)
   {
-    var options = {
-      color: '#ff0000',
-      connect: true,
-      width: 2
-    };
     var metric = datapointsJSON[i];
-    if(metric.target.lastIndexOf("min") == metric.target.length - 3 && metric.target.length >= 3)
-    {
-      options.color = "#00ff00";
-    } else if(metric.target.lastIndexOf("avg") == metric.target.length - 3 && metric.target.length >= 3)
-    {
-      options.color = "#d0d000";
-    }
     var mySeries = mainGraticule.getSeries(metric.target);
     if(!mySeries)
     {
-      mySeries = mainGraticule.addSeries(metric.target, options);
+      mySeries = mainGraticule.addSeries(metric.target, defaultSeriesStyling(metric.target));
     } else
     {
       mySeries.clear();
     }
-    timers.parsing.preprocessingEnded = (new Date()).getTime();
     for(var j = 0; j < metric.datapoints.length; ++j)
     {
-      mySeries.addPoint(new Point(metric.datapoints[j][1], metric.datapoints[j][0]));
+      mySeries.addPoint(new Point(metric.datapoints[j][1], metric.datapoints[j][0]), true);
     }
-    timers.parsing.end = (new Date()).getTime();
+    var metricParts = metric.target.split("/");
+    if(1 < metricParts.length)
+    {
+      if(undefined === distinctMetrics[metricParts[0]])
+      {
+        distinctMetrics[metricParts[0]] = new Object();
+      }
+      distinctMetrics[metricParts[0]][metricParts[1]] = i;
+    }
   }
+  for(var curMetricBase in distinctMetrics)
+  {
+    if(undefined !== distinctMetrics[curMetricBase].min && undefined !== distinctMetrics[curMetricBase].max)
+    {
+      var curBand = mainGraticule.addBand(curMetricBase, { color: "rgba(96,255,96,0.5)" });
+      var minSeries = mainGraticule.getSeries(distinctMetrics[curMetricBase].min);
+      for(var i = 0; i < minSeries.points.length; ++i)
+      {
+        curBand.addPoint(minSeries.points[i].clone());
+      }
+      var maxSeries = mainGraticule.getSeries(distinctMetrics[curMetricBase].max);
+      for(var i = maxSeries.points.length - 1; i >= 0; --i)
+      {
+        curBand.addPoint(maxSeries.points[i].clone());
+      }
+    }
+  }
+  timers.parsing.end = (new Date()).getTime();
   timers.drawing = {
     start: (new Date()).getTime(),
     end: 0
@@ -61,6 +76,23 @@ function processMetricQData(datapointsJSON)
   mainGraticule.draw();
   timers.drawing.end = (new Date()).getTime();
   showTimers();
+}
+
+function defaultSeriesStyling(metricName)
+{
+  var options = {
+    color: '#ff0000',
+    connect: true,
+    width: 2
+  };
+  if(metricName.lastIndexOf("min") == metricName.length - 3 && metricName.length >= 3)
+  {
+    options.color = "#00ff00";
+  } else if(metricName.lastIndexOf("avg") == metricName.length - 3 && metricName.length >= 3)
+  {
+    options.color = "#d0d000";
+  }
+  return options;
 }
 
 function showTimers()
