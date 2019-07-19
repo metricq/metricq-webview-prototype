@@ -1,18 +1,13 @@
-function Graticule(ctx, offsetDimension)
+function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
 {
   this.ctx = ctx;
   this.graticuleDimensions = offsetDimension;
-/* make these function local
-  this.timeConstraints = [minTime, maxTime];
-  this.valueConstraints = [minValue, maxValue];
-  this.widthPerSecond = this.graticuleDimensions[2] / (this.timeConstraints[1] - this.timeConstraints[0]);
-  this.valueSubtract = this.valueConstraints[0];
-  this.valueMultiply = this.graticuleDimensions[3] / (this.valueConstraints[1] - this.valueConstraints[0]);
-*/
+  this.pixelsLeft = paramPixelsLeft;
+  this.pixelsBottom = paramPixelsBottom;
   this.series = new Array();
-  this.addSeries = function(styleOptions)
+  this.addSeries = function(seriesName, styleOptions)
   {
-    var newSeries = new Series(styleOptions);
+    var newSeries = new Series(seriesName, styleOptions);
     this.series.push(newSeries);
     return newSeries;
   };
@@ -63,7 +58,7 @@ function Graticule(ctx, offsetDimension)
     {
       var x = this.graticuleDimensions[0] + ((xAxisSteps[i] - timeRange[0]) / timePerPixel);
       ctx.fillRect( x, this.graticuleDimensions[1], 2, this.graticuleDimensions[3]);
-      ctx.fillText(dateToHHMMStr(new Date(xAxisSteps[i])), x - 20, this.graticuleDimensions[1] + this.graticuleDimensions[3] + 20);
+      ctx.fillText(dateToHHMMStr(new Date(xAxisSteps[i])), x - 20, this.graticuleDimensions[1] + this.graticuleDimensions[3] + this.pixelsBottom /2);
     }
 
     maxStepsCount = Math.floor(this.graticuleDimensions[3] / minDistanceBetweenGridLines);
@@ -71,8 +66,11 @@ function Graticule(ctx, offsetDimension)
     for(var i = 0; i < yAxisSteps[i]; ++i)
     {
       var y = this.graticuleDimensions[3] - ((yAxisSteps[i] - valueRange[0]) / valuesPerPixel) + this.graticuleDimensions[1];
-      ctx.fillRect( this.graticuleDimensions[0], y, this.graticuleDimensions[2], 2);
-      ctx.fillText(yAxisSteps[i], this.graticuleDimensions[0] - 40, y + 4);
+      if(y >= this.graticuleDimensions[1])
+      {
+        ctx.fillRect( this.graticuleDimensions[0], y, this.graticuleDimensions[2], 2);
+        ctx.fillText(yAxisSteps[i], this.graticuleDimensions[0] - this.pixelsLeft, y + 4);
+      }
     }
   }
   this.draw = function()
@@ -86,8 +84,8 @@ function Graticule(ctx, offsetDimension)
         valueRange = this.figureOutValueRange();
     var timePerPixel = (timeRange[1] - timeRange[0]) / this.graticuleDimensions[2],
         valuesPerPixel = (valueRange[1] - valueRange[0]) / this.graticuleDimensions[3];
-    ctx.clearRect(this.graticuleDimensions[0], this.graticuleDimensions[1],
-                  this.graticuleDimensions[2], this.graticuleDimensions[3]);
+    ctx.clearRect(this.graticuleDimensions[0] - this.pixelsLeft, this.graticuleDimensions[1],
+                  this.graticuleDimensions[2] + this.pixelsLeft, this.graticuleDimensions[3] + this.pixelsBottom);
     this.drawGrid(timeRange, valueRange, timePerPixel, valuesPerPixel);
     for(var i = 0; i < this.series.length; ++i)
     {
@@ -134,8 +132,8 @@ function Graticule(ctx, offsetDimension)
       }
       if(drawALine)
       {
-        ctx.closePath();
         ctx.stroke();
+        ctx.closePath();
       }
     }
   }
@@ -185,10 +183,11 @@ function Graticule(ctx, offsetDimension)
     return valueRange;
   }
 }
-function Series(styleOptions)
+function Series(paramName, paramStyleOptions)
 {
   this.points = new Array();
-  this.styleOptions = styleOptions;
+  this.name = paramName;
+  this.styleOptions = paramStyleOptions;
   this.addPoint = function (newPoint) {
     if(0 == this.points.length)
     {

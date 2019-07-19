@@ -4,12 +4,20 @@
 <meta charset="utf-8" />
 <script src="graticule.js"></script>
 <script src="chart-metricq.js"></script>
+<style type="text/css">
+.graticule_heading {
+  text-align: center;
+  font-family: Sans;
+  font-size: 20pt;
+}
+</style>
 </head>
 <body>
 <h1>Metricq-webview-prototype</h1>
-<input type="date" name="metric_from" /><br/>
-<input type="date" name="metric_to" /><br/>
+<input type="date" name="metric_from_date" /><input type="time" name="metric_from_time" /><br/>
+<input type="date" name="metric_to_date" /><input type="time" name="metric_to_time" /><br/>
 <input type="text" name="metric_name" size="80" value="elab.ariel.s0.package.power/(min|max|avg)" /><br/>
+<input type="number" name="metric_interval_ms" size="10" value="120000" /><br/>
 <button onclick="submitMetricName()">Fetch</button>
 <div class="master_wrapper">
 </div>
