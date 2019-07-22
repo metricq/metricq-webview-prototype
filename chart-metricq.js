@@ -27,6 +27,23 @@ function init()
       }
     }
   });
+  document.getElementsByTagName("canvas")[0].addEventListener("wheel", function(evtObj) {
+    if(! evtObj.target)
+    {
+      return;
+    }
+    evtObj.preventDefault();
+
+    var scrollDirection = evtObj.deltaY / 15.00;
+    var curPos = [evtObj.x - evtObj.target.offsetLeft,
+                  evtObj.y - evtObj.target.offsetTop];
+    var scrollOffset = calculateScrollOffset(evtObj.target);
+    curPos[0] += scrollOffset[0];
+    curPos[1] += scrollOffset[1];
+    var curTimeValue = mainGraticule.getTimeValueAtPoint(curPos);
+    mainGraticule.zoomTimeAndValueAtPoint(curTimeValue, scrollDirection);
+    mainGraticule.draw(false);
+  });
 }
 function processMetricQData(datapointsJSON)
 {
@@ -66,7 +83,6 @@ function processMetricQData(datapointsJSON)
   {
     if(undefined !== distinctMetrics[curMetricBase].min && undefined !== distinctMetrics[curMetricBase].max)
     {
-console.log("Processing distinctMetric " + curMetricBase);
       var curBand = mainGraticule.addBand(curMetricBase, defaultBandStyling(curMetricBase));
       var minSeries = mainGraticule.getSeries(distinctMetrics[curMetricBase].min);
       for(var i = 0; i < minSeries.points.length; ++i)
@@ -233,6 +249,18 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
   };
   req.send("{\n  \"range\":{  \n    \"from\":\"" + from + "\",\n    \"to\":\"" + to + "\"\n  },\n  \"intervalMs\":" + intervalMs + ",\n  \"targets\":[  \n    {  \n      \"target\":\"" + target + "\"\n    }\n  ]\n}");
 }
+/* figure out scroll offset */
+function calculateScrollOffset(curLevelElement)
+{
+  var scrollOffset = [0, 0];
+  if(curLevelElement.parentNode && "HTML" !== curLevelElement.tagName)
+  {
+    var scrollOffset = calculateScrollOffset(curLevelElement.parentNode);
+  }
+  scrollOffset[0] += curLevelElement.scrollLeft;
+  scrollOffset[1] += curLevelElement.scrollTop;
+  return scrollOffset;
+}
 var mouseDown = {
   startPos: undefined,
   currentPos: undefined,
@@ -256,14 +284,9 @@ var mouseDown = {
       curPos[0] -= mouseDown.startTarget.offsetLeft;
       curPos[1] -= mouseDown.startTarget.offsetTop;
 
-      /* figure out scroll offset */
-      var curElementLevel = mouseDown.startTarget;
-      while(curElementLevel.parentNode && "HTML" !== curElementLevel.tagName)
-      {
-        curPos[0] += curElementLevel.scrollLeft;
-        curPos[1] += curElementLevel.scrollTop;
-        curElementLevel = curElementLevel.parentNode;
-      }
+      var scrollOffset = calculateScrollOffset(mouseDown.startTarget);
+      curPos[0] += scrollOffset[0];
+      curPos[1] += scrollOffset[1];
     }
     return curPos;
   },
@@ -310,4 +333,3 @@ document.addEventListener("DOMContentLoaded", init);
 document.addEventListener("mousedown", mouseDown.startClick);
 document.addEventListener("mousemove", mouseDown.moving);
 document.addEventListener("mouseup", mouseDown.endClick);
-
