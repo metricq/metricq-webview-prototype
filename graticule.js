@@ -20,6 +20,17 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
     }
     return undefined;
   };
+  this.getSeriesIndex = function(seriesSpecifier)
+  {
+    for(var i = 0; i < this.series.length; ++i)
+    {
+      if(seriesSpecifier === this.series[i].name)
+      {
+        return i;
+      }
+    }
+    return undefined;
+  };
   this.getSeries = function(seriesSpecifier)
   {
     if("number" == (typeof seriesSpecifier))
@@ -30,13 +41,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
       }
     } else
     {
-      for(var i = 0; i < this.series.length; ++i)
-      {
-        if(seriesSpecifier === this.series[i].name)
-        {
-          return this.series[i];
-        }
-      }
+      this.series[this.getSeriesIndex(seriesSpecifier)];
     }
     return undefined;
   };
@@ -227,6 +232,10 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
           if(this.series[i].styleOptions.color)
           {
             this.ctx.strokeStyle = this.series[i].styleOptions.color;
+          }
+          if(this.series[i].styleOptions.lineWidth)
+          {
+            this.ctx.lineWidth = this.series[i].styleOptions.lineWidth;
           }
         }
       }

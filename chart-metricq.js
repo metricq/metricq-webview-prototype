@@ -59,14 +59,15 @@ function processMetricQData(datapointsJSON)
       {
         distinctMetrics[metricParts[0]] = new Object();
       }
-      distinctMetrics[metricParts[0]][metricParts[1]] = i;
+      distinctMetrics[metricParts[0]][metricParts[1]] = mainGraticule.getSeriesIndex(metric.target);
     }
   }
   for(var curMetricBase in distinctMetrics)
   {
     if(undefined !== distinctMetrics[curMetricBase].min && undefined !== distinctMetrics[curMetricBase].max)
     {
-      var curBand = mainGraticule.addBand(curMetricBase, { color: "rgba(96,255,96,0.3)" });
+console.log("Processing distinctMetric " + curMetricBase);
+      var curBand = mainGraticule.addBand(curMetricBase, defaultBandStyling(curMetricBase));
       var minSeries = mainGraticule.getSeries(distinctMetrics[curMetricBase].min);
       for(var i = 0; i < minSeries.points.length; ++i)
       {
@@ -99,9 +100,16 @@ function intEightBitsToHex(eightBitNumber)
 var i8h = intEightBitsToHex;
 function int32BitsToHex(thirtytwoBitNumber)
 {
-  return i8h((thirtytwoBitNumber & (255 << 16)) >> 16) + i8h((thirtytwoBitNumber & (255 << 8)) >> 8) + i8h(thirtytwoBitNumber & 255);
+  return i8h((thirtytwoBitNumber >> 16) & 255) + i8h((thirtytwoBitNumber >> 8) & 255) + i8h(thirtytwoBitNumber & 255);
 }
-
+function defaultBandStyling(metricBaseName)
+{
+  var hash = crc32(metricBaseName);
+  var options = {
+    color: "rgba(" + ((hash >> 16) & 255)  + ","  + ((hash >> 8) & 255) + "," + (hash & 255) +  ", 0.3)"
+  }
+  return options;
+}
 function defaultSeriesStyling(metricName)
 {
   var baseName = metricName;
@@ -112,7 +120,8 @@ function defaultSeriesStyling(metricName)
   var options = {
     color: "#" + int32BitsToHex(crc32(baseName)),
     connect: true,
-    width: 2
+    width: 2,
+    lineWidth: 3
   };
 /*
   if(metricName.lastIndexOf("min") == metricName.length - 3 && metricName.length >= 3)
