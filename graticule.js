@@ -124,8 +124,8 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
     ctx.clearRect(this.graticuleDimensions[0] - this.pixelsLeft, this.graticuleDimensions[1],
                   this.graticuleDimensions[2] + this.pixelsLeft, this.graticuleDimensions[3] + this.pixelsBottom);
     this.drawGrid(timeRange, valueRange, timePerPixel, valuesPerPixel);
-    this.drawSeries(timeRange, valueRange, timePerPixel, valuesPerPixel);
     this.drawBands(timeRange, valueRange, timePerPixel, valuesPerPixel);
+    this.drawSeries(timeRange, valueRange, timePerPixel, valuesPerPixel);
   }
   this.drawBands = function(timeRange, valueRange, timePerPixel, valuesPerPixel)
   {

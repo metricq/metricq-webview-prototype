@@ -16,6 +16,13 @@ function init()
   document.getElementsByName("metric_to_time")[0].value = dateToHHMMStr(curDate) + ":00";
   masterWrapper = document.querySelector(".master_wrapper");
   ctx = createChart();
+  mouseDown.registerCallback(function(evtObj) {
+    if(mouseDown.startTarget && "CANVAS" === mouseDown.startTarget.tagName)
+    {
+      ctx.fillStyle = "#ff0000";
+      ctx.fillRect(mouseDown.currentPos[0], mouseDown.currentPos[1], 2, 2);
+    }
+  });
 }
 function processMetricQData(datapointsJSON)
 {
@@ -193,4 +200,78 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
   };
   req.send("{\n  \"range\":{  \n    \"from\":\"" + from + "\",\n    \"to\":\"" + to + "\"\n  },\n  \"intervalMs\":" + intervalMs + ",\n  \"targets\":[  \n    {  \n      \"target\":\"" + target + "\"\n    }\n  ]\n}");
 }
+var mouseDown = {
+  startPos: undefined,
+  currentPos: undefined,
+  endPos: undefined,
+  duration: 0,
+  isDown: false,
+  startTime: 0,
+  endTime: 0,
+  startTarget: undefined,
+  endTarget: undefined,
+  dragDropCallbacks: new Array(),
+  calcRelativePos: function(evtObj)
+  {
+    var curPos = [
+      evtObj.x,
+      evtObj.y
+    ];
+    if(mouseDown.startTarget)
+    {
+      curPos[0] -= mouseDown.startTarget.offsetLeft;
+      curPos[1] -= mouseDown.startTarget.offsetTop;
+
+      /* figure out scroll offset */
+      var curElementLevel = mouseDown.startTarget;
+      while(curElementLevel.parentNode && "HTML" !== curElementLevel.tagName)
+      {
+        curPos[0] += curElementLevel.scrollLeft;
+        curPos[1] += curElementLevel.scrollTop;
+        curElementLevel = curElementLevel.parentNode;
+      }
+    }
+    return curPos;
+  },
+  startClick: function(evtObj)
+  {
+    mouseDown.startTarget = evtObj.target;
+    mouseDown.endTarget = undefined;
+    mouseDown.endTime = 0;
+    mouseDown.duration = 0;
+    mouseDown.startTime = evtObj.timestamp;
+    var curPos = mouseDown.calcRelativePos(evtObj);
+    mouseDown.startPos = [ curPos[0], curPos[1]];
+    mouseDown.currentPos = [ curPos[0], curPos[1]];
+    mouseDown.isDown = true;
+  },
+  moving: function(evtObj)
+  {
+    if(mouseDown.isDown)
+    {
+      mouseDown.currentPos = mouseDown.calcRelativePos(evtObj);
+      for(var i = 0; i < mouseDown.dragDropCallbacks.length; ++i)
+      {
+        mouseDown.dragDropCallbacks[i](evtObj);
+      }
+    }
+  },
+  endClick: function(evtObj)
+  {
+    mouseDown.endPos = mouseDown.calcRelativePos(evtObj);
+    mouseDown.endTime = evtObj.timestamp;
+    mouseDown.duration = mouseDown.endTime - mouseDown.startTime;
+    mouseDown.endTarget = evtObj.target;
+    mouseDown.isDown = false;
+  },
+  registerCallback: function(callbackFunc)
+  {
+    mouseDown.dragDropCallbacks.push(callbackFunc);
+  }
+}
+
 document.addEventListener("DOMContentLoaded", init);
+document.addEventListener("click", mouseDown.startClick);
+document.addEventListener("mousemove", mouseDown.moving);
+document.addEventListener("mouseup", mouseDown.endClick);
+
