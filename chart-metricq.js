@@ -88,14 +88,33 @@ function processMetricQData(datapointsJSON)
   timers.drawing.end = (new Date()).getTime();
   showTimers();
 }
+function intEightBitsToHex(eightBitNumber)
+{
+  var hexArr = ['0', '1', '2', '3',
+                '4', '5', '6', '7',
+                '8', '9', 'A', 'B',
+                'C', 'D', 'E', 'F'];
+  return hexArr[((eightBitNumber & 240) >> 4)] + hexArr[eightBitNumber & 15];
+}
+var i8h = intEightBitsToHex;
+function int32BitsToHex(thirtytwoBitNumber)
+{
+  return i8h((thirtytwoBitNumber & (255 << 16)) >> 16) + i8h((thirtytwoBitNumber & (255 << 8)) >> 8) + i8h(thirtytwoBitNumber & 255);
+}
 
 function defaultSeriesStyling(metricName)
 {
+  var baseName = metricName;
+  if(-1 < metricName.indexOf("/"))
+  {
+    baseName = metricName.substring(0, metricName.indexOf("/"));
+  }
   var options = {
-    color: '#ff0000',
+    color: "#" + int32BitsToHex(crc32(baseName)),
     connect: true,
     width: 2
   };
+/*
   if(metricName.lastIndexOf("min") == metricName.length - 3 && metricName.length >= 3)
   {
     options.color = "#00ff00";
@@ -103,6 +122,7 @@ function defaultSeriesStyling(metricName)
   {
     options.color = "#d0d000";
   }
+*/
   return options;
 }
 
