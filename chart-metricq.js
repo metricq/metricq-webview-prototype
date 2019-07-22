@@ -19,8 +19,12 @@ function init()
   mouseDown.registerCallback(function(evtObj) {
     if(mouseDown.startTarget && "CANVAS" === mouseDown.startTarget.tagName)
     {
-      ctx.fillStyle = "#ff0000";
-      ctx.fillRect(mouseDown.currentPos[0], mouseDown.currentPos[1], 2, 2);
+      if(mouseDown.previousPos[0] !== mouseDown.currentPos[0]
+      || mouseDown.previousPos[1] !== mouseDown.currentPos[1])
+      {
+        mainGraticule.moveTimeAndValueRanges( (mouseDown.currentPos[0] - mouseDown.previousPos[0]) * -1 * mainGraticule.curTimePerPixel, (mouseDown.currentPos[1] - mouseDown.previousPos[1]) * mainGraticule.curValuesPerPixel);
+        mainGraticule.draw(false);
+      }
     }
   });
 }
@@ -62,7 +66,7 @@ function processMetricQData(datapointsJSON)
   {
     if(undefined !== distinctMetrics[curMetricBase].min && undefined !== distinctMetrics[curMetricBase].max)
     {
-      var curBand = mainGraticule.addBand(curMetricBase, { color: "rgba(96,255,96,0.5)" });
+      var curBand = mainGraticule.addBand(curMetricBase, { color: "rgba(96,255,96,0.3)" });
       var minSeries = mainGraticule.getSeries(distinctMetrics[curMetricBase].min);
       for(var i = 0; i < minSeries.points.length; ++i)
       {
@@ -80,7 +84,7 @@ function processMetricQData(datapointsJSON)
     start: (new Date()).getTime(),
     end: 0
   };
-  mainGraticule.draw();
+  mainGraticule.draw(true);
   timers.drawing.end = (new Date()).getTime();
   showTimers();
 }
@@ -203,6 +207,7 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
 var mouseDown = {
   startPos: undefined,
   currentPos: undefined,
+  previousPos: undefined,
   endPos: undefined,
   duration: 0,
   isDown: false,
@@ -243,12 +248,14 @@ var mouseDown = {
     var curPos = mouseDown.calcRelativePos(evtObj);
     mouseDown.startPos = [ curPos[0], curPos[1]];
     mouseDown.currentPos = [ curPos[0], curPos[1]];
+    mouseDown.previousPos = [ curPos[0], curPos[1]];
     mouseDown.isDown = true;
   },
   moving: function(evtObj)
   {
-    if(mouseDown.isDown)
+    if(true === mouseDown.isDown)
     {
+      mouseDown.previousPos = mouseDown.currentPos;
       mouseDown.currentPos = mouseDown.calcRelativePos(evtObj);
       for(var i = 0; i < mouseDown.dragDropCallbacks.length; ++i)
       {
@@ -271,7 +278,7 @@ var mouseDown = {
 }
 
 document.addEventListener("DOMContentLoaded", init);
-document.addEventListener("click", mouseDown.startClick);
+document.addEventListener("mousedown", mouseDown.startClick);
 document.addEventListener("mousemove", mouseDown.moving);
 document.addEventListener("mouseup", mouseDown.endClick);
 
