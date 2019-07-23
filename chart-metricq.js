@@ -43,7 +43,7 @@ function initializeStyleOptions()
   var functionSourceShortened = "";
   for(var i = 2; i < functionSourceSplitted.length - 1; ++i)
   {
-    functionSourceShortened += functionSourceSplitted[i] + "\n";
+    functionSourceShortened += functionSourceSplitted[i].replace(/^ +/,"") + "\n";
   }
   stylesColorChoosingEle.value = functionSourceShortened;
 
@@ -68,10 +68,6 @@ function stylingHasChanged(evtObj)
       stylingOptions.band = JSON.parse(document.getElementById("style_options_bands").value);
       determineColorForMetric = new Function("metricBaseName", document.getElementById("style_options_color_choosing").value);
       document.querySelector(".style_options_wrapper").style.backgroundColor = "rgba(64, 255, 64, 0.5)";
-      if(mainGraticule)
-      {
-        mainGraticule.draw();
-      }
     } catch(exc)
     {
       console.log("Couldn't parse style Options");
@@ -298,7 +294,7 @@ function processMetricQData(datapointsJSON, doDraw, doResize)
       if(curBand)
       {
         curBand.clear();
-        mySeries.styleOptions = defaultBandStyling(curMetricBase);
+        curBand.styleOptions = defaultBandStyling(curMetricBase);
       } else
       {
         curBand = mainGraticule.addBand(curMetricBase, defaultBandStyling(curMetricBase));
