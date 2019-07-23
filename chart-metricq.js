@@ -22,7 +22,7 @@ function init()
       if(mouseDown.previousPos[0] !== mouseDown.currentPos[0]
       || mouseDown.previousPos[1] !== mouseDown.currentPos[1])
       {
-        mainGraticule.moveTimeAndValueRanges( (mouseDown.currentPos[0] - mouseDown.previousPos[0]) * -1 * mainGraticule.curTimePerPixel, (mouseDown.currentPos[1] - mouseDown.previousPos[1]) * mainGraticule.curValuesPerPixel);
+        mainGraticule.moveTimeAndValueRanges( (mouseDown.currentPos[0] - mouseDown.previousPos[0]) * -1 * mainGraticule.curTimePerPixel, 0);
         mainGraticule.draw(false);
       }
     }
@@ -41,7 +41,7 @@ function init()
     curPos[0] += scrollOffset[0];
     curPos[1] += scrollOffset[1];
     var curTimeValue = mainGraticule.getTimeValueAtPoint(curPos);
-    mainGraticule.zoomTimeAndValueAtPoint(curTimeValue, scrollDirection);
+    mainGraticule.zoomTimeAndValueAtPoint(curTimeValue, scrollDirection, true, false);
     mainGraticule.draw(false);
   });
 }
