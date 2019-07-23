@@ -234,6 +234,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
       var pointWidth = 2;
       var halfPointWidth = 1;
       var drawALine = false;
+      var drawDots = true;
       if(this.series[i].styleOptions)
       {
         if(this.series[i].styleOptions.color)
@@ -255,6 +256,14 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
           {
             this.ctx.lineWidth = this.series[i].styleOptions.lineWidth;
           }
+          if(this.series[i].styleOptions.lineDash)
+          {
+            this.ctx.setLineDash(this.series[i].styleOptions.lineDash);
+          }
+        }
+        if(!this.series[i].styleOptions.dots)
+        {
+          drawDots = false;
         }
       }
       halfPointWidth = Math.round(pointWidth / 2);
@@ -274,7 +283,10 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
             this.ctx.lineTo(x,y);
           }
         }
-        this.ctx.fillRect(x - halfPointWidth, y - halfPointWidth, pointWidth, pointWidth)
+        if(drawDots)
+        {
+          this.ctx.fillRect(x - halfPointWidth, y - halfPointWidth, pointWidth, pointWidth);
+        }
       }
       if(drawALine)
       {
@@ -282,6 +294,8 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
         this.ctx.closePath();
       }
     }
+    // reset line dash
+    this.ctx.setLineDash([0,0]);
   };
   this.figureOutTimeRange = function ()
   {

@@ -137,17 +137,13 @@ function defaultSeriesStyling(metricName)
     color: "#" + int32BitsToHex(crc32(baseName)),
     connect: true,
     width: 2,
-    lineWidth: 3
+    lineWidth: 3,
+    dots: false,
   };
-/*
-  if(metricName.lastIndexOf("min") == metricName.length - 3 && metricName.length >= 3)
+  if(metricName.lastIndexOf("avg") == metricName.length - 3 && metricName.length >= 3)
   {
-    options.color = "#00ff00";
-  } else if(metricName.lastIndexOf("avg") == metricName.length - 3 && metricName.length >= 3)
-  {
-    options.color = "#d0d000";
+    options.lineDash = [5, 4];
   }
-*/
   return options;
 }
 
