@@ -234,9 +234,17 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
     {
       if(this.bands[i].styleOptions)
       {
+        if(this.bands[i].styleOptions.skip)
+        {
+          continue;
+        }
         if(this.bands[i].styleOptions.color)
         {
           this.ctx.fillStyle = this.bands[i].styleOptions.color;
+        }
+        if(this.bands[i].styleOptions.alpha)
+        {
+          this.ctx.globalAlpha = this.bands[i].styleOptions.alpha;
         }
       }
       
@@ -258,20 +266,23 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
         this.ctx.closePath();
         this.ctx.fill();
       }
+      this.ctx.globalAlpha = 1;
     }
   }
   this.drawSeries = function(timeRange, valueRange, timePerPixel, valuesPerPixel)
   {
     for(var i = 0; i < this.series.length; ++i)
     {
-      // reset line dash
-      this.ctx.setLineDash([0,0]);
       var pointWidth = 2;
       var halfPointWidth = 1;
       var drawALine = false;
       var drawDots = true;
       if(this.series[i].styleOptions)
       {
+        if(this.series[i].styleOptions.skip)
+        {
+          continue;
+        }
         if(this.series[i].styleOptions.color)
         {
           this.ctx.fillStyle = this.series[i].styleOptions.color;
@@ -299,6 +310,10 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
         if(!this.series[i].styleOptions.dots)
         {
           drawDots = false;
+        }
+        if(this.series[i].styleOptions.alpha)
+        {
+          this.ctx.globalAlpha = this.series[i].styleOptions.alpha;
         }
       }
       halfPointWidth = Math.round(pointWidth / 2);
@@ -328,6 +343,9 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
         this.ctx.stroke();
         this.ctx.closePath();
       }
+      // reset ctx style options
+      this.ctx.setLineDash([0,0]);
+      this.ctx.globalAlpha = 1;
     }
   };
   this.figureOutTimeRange = function ()

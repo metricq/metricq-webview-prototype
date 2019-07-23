@@ -7,13 +7,89 @@ var mainGraticule;
 var timers = new Object();
 var ajaxOpenRequests = new Array();
 var ajaxRequestIndex = 1;
+var lastStylingChangeTime = 0;
+var stylingOptions = {
+  band: {
+    color: "default",
+    alpha: 0.3
+  },
+  series: {
+    color: "default",
+    connect: true,
+    width: 2,
+    lineWidth: 3,
+    dots: false,
+    alpha: 1
+  }
+}
 function init()
 {
   initializeTimeFields();
   initializePlusButton();
+  initializeStyleOptions();
   masterWrapper = document.querySelector(".master_wrapper");
   ctx = createChart();
   registerCallbacks();
+}
+function initializeStyleOptions()
+{
+  var stylesLinesEle = document.getElementById("style_options_lines");
+  stylesLinesEle.value = JSON.stringify(stylingOptions.series).replace(/,/g, ",\n");
+  var stylesBandsEle = document.getElementById("style_options_bands");
+  stylesBandsEle.value = JSON.stringify(stylingOptions.band).replace(/,/g, ",\n");
+  var stylesColorChoosingEle = document.getElementById("style_options_color_choosing");
+  var functionSourceFull = determineColorForMetric.toSource();
+  var functionSourceSplitted = functionSourceFull.split("\n");
+  var functionSourceShortened = "";
+  for(var i = 2; i < functionSourceSplitted.length - 1; ++i)
+  {
+    functionSourceShortened += functionSourceSplitted[i] + "\n";
+  }
+  stylesColorChoosingEle.value = functionSourceShortened;
+
+  stylesLinesEle.addEventListener("keyup", stylingHasChanged);
+  stylesBandsEle.addEventListener("keyup", stylingHasChanged);
+  stylesColorChoosingEle.addEventListener("keyup", stylingHasChanged);
+}
+// another watchdog like behaving self calling function using setTimeout()
+function stylingHasChanged(evtObj)
+{
+  var curTime = (new Date()).getTime();
+  if(0 == lastStylingChangeTime)
+  {
+    lastStylingChangeTime = curTime;
+    setTimeout(stylingHasChanged, 200);
+    return;
+  }
+  if((curTime - lastStylingChangeTime) >= 200)
+  {
+    try {
+      stylingOptions.series = JSON.parse(document.getElementById("style_options_lines").value);
+      stylingOptions.band = JSON.parse(document.getElementById("style_options_bands").value);
+      determineColorForMetric = new Function("metricBaseName", document.getElementById("style_options_color_choosing").value);
+      document.querySelector(".style_options_wrapper").style.backgroundColor = "rgba(64, 255, 64, 0.5)";
+      if(mainGraticule)
+      {
+        mainGraticule.draw();
+      }
+    } catch(exc)
+    {
+      console.log("Couldn't parse style Options");
+      console.log(exc);
+      document.querySelector(".style_options_wrapper").style.backgroundColor = "rgba(255, 64, 64, 0.5)";
+    }
+  } else
+  {
+    if(evtObj && evtObj.target)
+    {
+      lastStylingChangeTime = curTime;
+      setTimeout(stylingHasChanged, 200);
+    } else
+    {
+      setTimeout(stylingHasChanged, 20);
+    }
+    return;
+  }
 }
 function initializeTimeFields()
 {
@@ -195,6 +271,7 @@ function processMetricQData(datapointsJSON, doDraw, doResize)
     if(mySeries)
     {
       mySeries.clear();
+      mySeries.styleOptions = defaultSeriesStyling(metric.target);
     } else
     {
       mySeries = mainGraticule.addSeries(metric.target, defaultSeriesStyling(metric.target));
@@ -221,6 +298,7 @@ function processMetricQData(datapointsJSON, doDraw, doResize)
       if(curBand)
       {
         curBand.clear();
+        mySeries.styleOptions = defaultBandStyling(curMetricBase);
       } else
       {
         curBand = mainGraticule.addBand(curMetricBase, defaultBandStyling(curMetricBase));
@@ -265,8 +343,11 @@ function int32BitsToHex(thirtytwoBitNumber)
 }
 function defaultBandStyling(metricBaseName)
 {
-  var options = {
-    color: determineColorForMetric(metricBaseName, false)
+  //clone the options
+  var options = JSON.parse(JSON.stringify(stylingOptions.band));
+  if("default" === options.color);
+  {
+    options.color = determineColorForMetric(metricBaseName);
   }
   return options;
 }
@@ -277,29 +358,22 @@ function defaultSeriesStyling(metricName)
   {
     baseName = metricName.substring(0, metricName.indexOf("/"));
   }
-  var options = {
-    color: determineColorForMetric(baseName, true),
-    connect: true,
-    width: 2,
-    lineWidth: 3,
-    dots: false,
-  };
+  //clone the options
+  var options = JSON.parse(JSON.stringify(stylingOptions.series));
+  if("default" === options.color)
+  {
+    options.color = determineColorForMetric(baseName);
+  }
   if(metricName.lastIndexOf("avg") == metricName.length - 3 && metricName.length >= 3)
   {
     options.lineDash = [5, 4];
   }
   return options;
 }
-function determineColorForMetric(metricBaseName, isLine)
+function determineColorForMetric(metricBaseName)
 {
   var rgb = hslToRgb((crc32(metricBaseName) >> 24 & 255) / 255.00, 1, 0.46);
-  if(isLine)
-  {
-    return "rgb(" + rgb[0] + "," + rgb[1] + "," + rgb[2] + ")";
-  } else
-  {
-    return "rgba(" + rgb[0]  + ","  + rgb[1] + "," + rgb[2] +  ", 0.3)";
-  }
+  return "rgb(" + rgb[0] + "," + rgb[1] + "," + rgb[2] + ")";
 }
 
 function showTimers()

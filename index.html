@@ -27,28 +27,53 @@
   padding: 0px;
   margin: 0px;
 }
+.style_options_wrapper {
+  position: absolute;
+  right: 0px;
+  top: 0px;
+}
+.style_wrapper {
+  float: left;
+}
 </style>
 </head>
 <body>
 <h1>Metricq-webview-prototype</h1>
-<div class="field_description"><label for="metric_from_time">Zeit beginn</label></div>
-<div class="field_inputs"><input type="date" name="metric_from_date" /><input type="time" name="metric_from_time" id="metric_from_time" /></div>
-<div class="field_description"><label for="metric_to_time">Zeit ende</label></div>
-<div class="field_inputs"><input type="date" name="metric_to_date" /><input type="time" name="metric_to_time" id="metric_to_time" /></div>
-<div class="cleaner"> &nbsp; </div>
-<div class="metric_names">
-<div class="field_description"><label for="metric_name[0]">Metrik Name (1)</label></div>
-<div class="field_inputs"><input type="text" name="metric_name[0]" size="80" value="elab.ariel.s0.package.power/(min|max|avg)" id="metric_name[0]"/></div>
-<div class="field_description"><label for="metric_name[1]">Metrik Name (2)</label></div>
-<div class="field_inputs"><input type="text" name="metric_name[1]" size="80" value="elab.ariel.s1.package.power/(min|max|avg)" id="metric_name[1]"/></div>
-<div class="field_description"><label for="metric_name[2]">Metrik Name (3)</label></div>
-<div class="field_inputs"><input type="text" name="metric_name[2]" size="80" value="elab.ariel.s0.dram.power/(min|max|avg)" id="metric_name[2]"/></div>
+<div class="metric_specification">
+  <div class="field_description"><label for="metric_from_time">Zeit beginn</label></div>
+  <div class="field_inputs"><input type="date" name="metric_from_date" /><input type="time" name="metric_from_time" id="metric_from_time" /></div>
+  <div class="field_description"><label for="metric_to_time">Zeit ende</label></div>
+  <div class="field_inputs"><input type="date" name="metric_to_date" /><input type="time" name="metric_to_time" id="metric_to_time" /></div>
+  <div class="cleaner"> &nbsp; </div>
+  <div class="metric_names">
+  <div class="field_description"><label for="metric_name[0]">Metrik Name (1)</label></div>
+  <div class="field_inputs"><input type="text" name="metric_name[0]" size="80" value="elab.ariel.s0.package.power/(min|max|avg)" id="metric_name[0]"/></div>
+  <div class="field_description"><label for="metric_name[1]">Metrik Name (2)</label></div>
+  <div class="field_inputs"><input type="text" name="metric_name[1]" size="80" value="elab.ariel.s1.package.power/(min|max|avg)" id="metric_name[1]"/></div>
+  <div class="field_description"><label for="metric_name[2]">Metrik Name (3)</label></div>
+  <div class="field_inputs"><input type="text" name="metric_name[2]" size="80" value="elab.ariel.s0.dram.power/(min|max|avg)" id="metric_name[2]"/></div>
+  </div>
+  <div class="cleaner"> &nbsp; </div>
+  <div class="field_description"><label for="metric_request_every_that_many_pixels">Alle x Pixel Wert anfordern</label></div>
+  <div class="field_inputs"><input type="number" name="metric_request_every_that_many_pixels" id="metric_request_every_that_many_pixels" size="10" value="40" /></div>
+  <div class="cleaner"> &nbsp; </div>
+  <button onclick="submitMetricName()">Fetch</button>
 </div>
-<div class="cleaner"> &nbsp; </div>
-<div class="field_description"><label for="metric_request_every_that_many_pixels">Alle x Pixel Wert anfordern</label></div>
-<div class="field_inputs"><input type="number" name="metric_request_every_that_many_pixels" id="metric_request_every_that_many_pixels" size="10" value="20" /></div>
-<div class="cleaner"> &nbsp; </div>
-<button onclick="submitMetricName()">Fetch</button>
+<div class="style_options_wrapper">
+  <div class="style_wrapper">
+    <label for="style_options_lines">Options for Lines</label><br/>
+    <textarea rows="6" cols="30" id="style_options_lines">uninitialized</textarea>
+  </div>
+  <div class="style_wrapper">
+    <label for="style_options_bands">Options for Bands</label><br/>
+    <textarea rows="6" cols="30" id="style_options_bands">uninitialized</textarea>
+  </div>
+  <div class="style_wrapper">
+    <label for="style_options_color_choosing">determineColorForMetric(metricBaseName)</label><br/>
+    <textarea rows="6" cols="60" id="style_options_color_choosing">unitialized</textarea>
+  </div>
+  <div class="cleaner"> &nbsp; </div>
+</div>
 <div class="master_wrapper">
 </div>
 </body>
