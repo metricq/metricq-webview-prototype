@@ -38,7 +38,7 @@ function initializeStyleOptions()
   var stylesBandsEle = document.getElementById("style_options_bands");
   stylesBandsEle.value = JSON.stringify(stylingOptions.band).replace(/,/g, ",\n");
   var stylesColorChoosingEle = document.getElementById("style_options_color_choosing");
-  var functionSourceFull = determineColorForMetric.toSource();
+  var functionSourceFull = determineColorForMetric.toString();
   var functionSourceSplitted = functionSourceFull.split("\n");
   var functionSourceShortened = "";
   for(var i = 2; i < functionSourceSplitted.length - 1; ++i)
