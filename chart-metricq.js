@@ -1,10 +1,21 @@
 
 var masterWrapper;
 var ctx;
-var canvasDimensions = [800, 500]
+var canvasDimensions = [window.innerWidth - 100, 500]
+var canvasSpaceLeftTop = [45, 40];
 var mainGraticule;
 var timers = new Object();
+var ajaxOpenRequests = new Array();
+var ajaxRequestIndex = 1;
 function init()
+{
+  initializeTimeFields();
+  initializePlusButton();
+  masterWrapper = document.querySelector(".master_wrapper");
+  ctx = createChart();
+  registerCallbacks();
+}
+function initializeTimeFields()
 {
   var curDate = new Date();
   var curDayStr = curDate.getFullYear() + "-" + ((curDate.getMonth() + 1) < 10 ? "0" : "") + (curDate.getMonth() + 1) + "-" + (curDate.getDate() < 10 ? "0" : "") + curDate.getDate();
@@ -14,15 +25,53 @@ function init()
   document.getElementsByName("metric_to_date")[0].max = curDayStr;
   document.getElementsByName("metric_from_time")[0].value = dateToHHMMStr(new Date(curDate.getTime() - 7200000)) + ":00";
   document.getElementsByName("metric_to_time")[0].value = dateToHHMMStr(curDate) + ":00";
-  masterWrapper = document.querySelector(".master_wrapper");
-  ctx = createChart();
-  registerCallbacks();
 }
+function initializePlusButton()
+{
+  var metricNamesEle = document.querySelector(".metric_names");
+  var plusButtonEle = document.createElement("button");
+  plusButtonEle.appendChild(document.createTextNode("+"));
+  plusButtonEle.setAttribute("class", "plus_button");
+  plusButtonEle.addEventListener("click", function() {
+    var i;
+    var previousElement = undefined;
+    var lastElement = undefined;
+    for(i = 0; ; ++i)
+    {
+      previousElement = lastElement;
+      lastElement = document.getElementById("metric_name[" + i + "]")
+      if( ! lastElement)
+      {
+        break;
+      }
+    }
+    var metricNamesEle = document.querySelector(".metric_names");
+    var plusButtonEle = document.querySelector(".plus_button");
+    var fieldDescriptionEle = document.createElement("div");
+    fieldDescriptionEle.setAttribute("class", "field_description");
+    var labelEle = document.createElement("label");
+    labelEle.setAttribute("for", "metric_name[" + i + "]");
+    labelEle.appendChild(document.createTextNode("Metrik Name (" + (i + 1) + ")"));
+    fieldDescriptionEle.appendChild(labelEle);
+    metricNamesEle.insertBefore(fieldDescriptionEle, plusButtonEle);
 
+    var fieldInputsEle = document.createElement("div");
+    fieldInputsEle.setAttribute("class", "field_inputs");
+    var inputEle = document.createElement("input");
+    inputEle.setAttribute("type", "text");
+    inputEle.setAttribute("name", "metric_name[" + i + "]");
+    inputEle.setAttribute("size", "80");
+    inputEle.setAttribute("value", previousElement.value);
+    inputEle.setAttribute("id", "metric_name[" + i + "]");
+    fieldInputsEle.appendChild(inputEle);
+    metricNamesEle.insertBefore(fieldInputsEle, plusButtonEle);
+  });
+  metricNamesEle.appendChild(plusButtonEle);
+}
 function registerCallbacks()
 {
   mouseDown.registerCallback(function(evtObj) {
-    if(mouseDown.startTarget && "CANVAS" === mouseDown.startTarget.tagName)
+    if(mainGraticule && mouseDown.startTarget && "CANVAS" === mouseDown.startTarget.tagName)
     {
       if(mouseDown.previousPos[0] !== mouseDown.currentPos[0]
       || mouseDown.previousPos[1] !== mouseDown.currentPos[1])
@@ -34,7 +83,7 @@ function registerCallbacks()
     }
   });
   document.getElementsByTagName("canvas")[0].addEventListener("wheel", function(evtObj) {
-    if(! evtObj.target)
+    if(! evtObj.target || !mainGraticule)
     {
       return;
     }
@@ -126,16 +175,16 @@ function updateAllSeriesesBands(lastUpdateTime)
     {
       requestMetric += "/(" + extensionArr.join("|") + ")";
     }
-    fetchMeasureData(metricFrom, metricTo, intervalMs, requestMetric, function(jsonObj) { processMetricQData(jsonObj, false, false); });
+    fetchMeasureData(metricFrom, metricTo, calcIntervalMs(metricFrom, metricTo), requestMetric, function(jsonObj) { processMetricQData(jsonObj, false, false); });
   }
-  mainGraticule.draw();
+  setTimeout(allAjaxCompletedWatchdog, 30);
 }
 function processMetricQData(datapointsJSON, doDraw, doResize)
 {
   console.log(datapointsJSON);
   if(! mainGraticule)
   {
-    mainGraticule = new Graticule(ctx, [45, 40, canvasDimensions[0] - 45, canvasDimensions[1] - 40], 45, 40);
+    mainGraticule = new Graticule(ctx, [canvasSpaceLeftTop[0], canvasSpaceLeftTop[1], canvasDimensions[0] - canvasSpaceLeftTop[0], canvasDimensions[1] - canvasSpaceLeftTop[1]], canvasSpaceLeftTop[0], canvasSpaceLeftTop[1]);
   }
   timers.parsing.preprocessingEnded = (new Date()).getTime();
   var distinctMetrics = new Object();
@@ -194,7 +243,10 @@ function processMetricQData(datapointsJSON, doDraw, doResize)
     start: (new Date()).getTime(),
     end: 0
   };
-  mainGraticule.draw(doResize);
+  if(doDraw)
+  {
+    mainGraticule.draw(doResize);
+  }
   timers.drawing.end = (new Date()).getTime();
   showTimers();
 }
@@ -249,6 +301,7 @@ function showTimers()
   if(timers.db)
   {
     deltaTime = timers.db.duration;
+    deltaTime = Math.round(deltaTime * 100) / 100;
     timingsString += ", DB " + deltaTime + " ms";
   }
   deltaTime = timers.parsing.end - timers.parsing.start;
@@ -286,15 +339,30 @@ function createChart()
   masterWrapper.appendChild(wrapperEle);
   return canvasEle.getContext("2d");
 }
+function calcIntervalMs(metricFrom, metricTo)
+{
+  var countOfDataPoints = (canvasDimensions[0] - canvasSpaceLeftTop[0]) / parseFloat(document.getElementsByName("metric_request_every_that_many_pixels")[0].value);
+  return Math.floor((metricTo.getTime() - metricFrom.getTime()) / countOfDataPoints);
+}
 function submitMetricName()
 {
-  var metricFrom = document.getElementsByName("metric_from_date")[0].value + " " + 
-                   document.getElementsByName("metric_from_time")[0].value;
-  var metricTo   = document.getElementsByName("metric_to_date"  )[0].value + " " +
-                   document.getElementsByName("metric_to_time"  )[0].value;
-  var metricName = document.getElementsByName("metric_name")[0].value;
-  var intervalMs = parseInt(document.getElementsByName("metric_interval_ms")[0].value);
-  fetchMeasureData(new Date(metricFrom), new Date(metricTo), intervalMs, metricName, function(jsonObj) { processMetricQData(jsonObj, true, true); });
+  var metricFrom = new Date(document.getElementsByName("metric_from_date")[0].value + " " + 
+                            document.getElementsByName("metric_from_time")[0].value);
+  var metricTo   = new Date(document.getElementsByName("metric_to_date"  )[0].value + " " +
+                            document.getElementsByName("metric_to_time"  )[0].value);
+  var intervalMs = calcIntervalMs(metricFrom, metricTo);
+  for(var i = 0; ; ++i)
+  {
+    var curMetricNameEles = document.getElementsByName("metric_name[" + i + "]");
+    if(0 < curMetricNameEles.length)
+    {
+      fetchMeasureData(metricFrom, metricTo, intervalMs, curMetricNameEles[0].value, function(jsonObj) { processMetricQData(jsonObj, false, false); });
+    } else
+    {
+      break;
+    }
+  }
+  setTimeout(allAjaxCompletedWatchdog, 30);
 }
 
 function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbackFunc)
@@ -305,7 +373,11 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
   var headingEle = document.querySelectorAll(".graticule_heading")[0];
   headingEle.removeChild(headingEle.firstChild);
   headingEle.appendChild(document.createTextNode(target));
+
+  var curRequestId = ajaxRequestIndex ++;
+  ajaxOpenRequests.push(curRequestId);
   var req = new XMLHttpRequest();
+  req.requestId = curRequestId;
   req.open("POST", "proxy.php", true);
   req.onreadystatechange = function (callMe) { return function(obj) {
     if(1 == obj.target.readyState)
@@ -324,12 +396,26 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
         jsonObj = JSON.parse(obj.target.responseText);
         if(jsonObj && jsonObj[0].time_measurements.db)
         {
-          timers.db.duration = jsobObj[0].time_measurements.db * 1000;
+          timers.db = { duration: 0 };
+          timers.db.duration = jsonObj[0].time_measurements.db * 1000;
         }
-      } catch(exc) {}
+      } catch(exc)
+      {
+        console.log("Database response could not be parsed");
+        console.log(exc);
+        console.log(obj.target.responseText);
+      }
       if(jsonObj)
       {
         callMe(jsonObj);
+      }
+      for(var i = 0; i < ajaxOpenRequests.length; ++i)
+      {
+        if(obj.target.requestId == ajaxOpenRequests[i])
+        {
+          ajaxOpenRequests.splice(i, 1);
+          break;
+        }
       }
     }
   };}(callbackFunc);
@@ -337,6 +423,21 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
     presend: (new Date()).getTime()
   };
   req.send("{\n  \"range\":{  \n    \"from\":\"" + from + "\",\n    \"to\":\"" + to + "\"\n  },\n  \"intervalMs\":" + intervalMs + ",\n  \"targets\":[  \n    {  \n      \"target\":\"" + target + "\"\n    }\n  ]\n}");
+}
+function allAjaxCompletedWatchdog()
+{
+  if(0 == ajaxOpenRequests.length)
+  {
+    if(mainGraticule)
+    {
+      var needSetTimeRange = !mainGraticule.curTimeRange;
+      mainGraticule.automaticallyDetermineRanges(needSetTimeRange, true);
+      mainGraticule.draw(false);
+    }
+  } else
+  {
+    setTimeout(allAjaxCompletedWatchdog, 15);
+  }
 }
 /* figure out scroll offset */
 function calculateScrollOffset(curLevelElement)

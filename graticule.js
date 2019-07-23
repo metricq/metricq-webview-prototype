@@ -185,13 +185,22 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
     }
     this.lastRangeChangeTime = (new Date()).getTime();
   }
-  this.automaticallyDetermineRanges = function()
+  this.automaticallyDetermineRanges = function(determineTimeRange, determineValueRange)
   {
-    this.curTimeRange = this.figureOutTimeRange();
-    this.curValueRange = this.figureOutValueRange();
-    this.curTimePerPixel = (this.curTimeRange[1] - this.curTimeRange[0]) / this.graticuleDimensions[2];
-    this.curValuesPerPixel = (this.curValueRange[1] - this.curValueRange[0]) / this.graticuleDimensions[3];
-    this.lastRangeChangeTime = (new Date()).getTime();
+    if(determineTimeRange)
+    {
+      this.curTimeRange = this.figureOutTimeRange();
+      this.curTimePerPixel = (this.curTimeRange[1] - this.curTimeRange[0]) / this.graticuleDimensions[2];
+    }
+    if(determineValueRange)
+    {
+      this.curValueRange = this.figureOutValueRange();
+      this.curValuesPerPixel = (this.curValueRange[1] - this.curValueRange[0]) / this.graticuleDimensions[3];
+    }
+    if(determineTimeRange || determineValueRange)
+    {
+      this.lastRangeChangeTime = (new Date()).getTime();
+    }
   };
   this.draw = function(adjustRanges)
   {
@@ -202,7 +211,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
     }
     if(true === adjustRanges)
     {
-      this.automaticallyDetermineRanges();
+      this.automaticallyDetermineRanges(true, true);
     } else if(undefined === this.curTimeRange)
     {
       console.log("Cowardly refusing to do draw() when I am not allowed to determine Time and Value Ranges");
@@ -255,6 +264,8 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
   {
     for(var i = 0; i < this.series.length; ++i)
     {
+      // reset line dash
+      this.ctx.setLineDash([0,0]);
       var pointWidth = 2;
       var halfPointWidth = 1;
       var drawALine = false;
@@ -318,8 +329,6 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
         this.ctx.closePath();
       }
     }
-    // reset line dash
-    this.ctx.setLineDash([0,0]);
   };
   this.figureOutTimeRange = function ()
   {
