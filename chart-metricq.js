@@ -68,6 +68,18 @@ function stylingHasChanged(evtObj)
       stylingOptions.band = JSON.parse(document.getElementById("style_options_bands").value);
       determineColorForMetric = new Function("metricBaseName", document.getElementById("style_options_color_choosing").value);
       document.querySelector(".style_options_wrapper").style.backgroundColor = "rgba(64, 255, 64, 0.5)";
+      if(mainGraticule)
+      {
+        for(var i = 0; i < mainGraticule.series.length; ++i)
+        {
+          mainGraticule.series[i].styleOptions = defaultSeriesStyling(mainGraticule.series[i].name);
+        }
+        for(var i = 0; i < mainGraticule.bands.length; ++i)
+        {
+          mainGraticule.bands[i].styleOptions = defaultBandStyling(mainGraticule.bands[i].name);
+        }
+        mainGraticule.draw(false);
+      }
     } catch(exc)
     {
       console.log("Couldn't parse style Options");
