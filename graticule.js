@@ -10,6 +10,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
   this.pixelsBottom = paramPixelsBottom;
   this.series = new Array();
   this.bands = new Array();
+  this.lastRangeChangeTime = 0;
   this.clearSeries = function(seriesSpecifier)
   {
     var curSeries = this.getSeries(seriesSpecifier);
@@ -41,10 +42,30 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
       }
     } else
     {
-      this.series[this.getSeriesIndex(seriesSpecifier)];
+      return this.series[this.getSeriesIndex(seriesSpecifier)];
     }
     return undefined;
   };
+  this.getBand = function(bandSpecifier)
+  {
+    if("number" == (typeof bandSpecifier))
+    {
+      if((0 <= bandSpecifier) && (this.bands.length > bandSpecifier))
+      {
+        return this.bands[bandSpecifier];
+      }
+    } else
+    {
+      for(var i = 0; i < this.bands.length; ++i)
+      {
+        if(bandSpecifier === this.bands[i].name)
+        {
+          return this.bands[i];
+        }
+      }
+    }
+    return undefined;
+  }
   this.addSeries = function(seriesName, styleOptions)
   {
     var newSeries = new Series(seriesName, styleOptions);
@@ -143,6 +164,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
     this.curTimeRange[1] += moveTimeBy;
     this.curValueRange[0] += moveValueBy;
     this.curValueRange[1] += moveValueBy;
+    this.lastRangeChangeTime = (new Date()).getTime();
   };
   this.zoomTimeAndValueAtPoint = function(pointAt, zoomDirection, zoomTime, zoomValue)
   {
@@ -161,6 +183,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
                              pointAt[1] + (newValueDelta / 2)];
       this.curValuesPerPixel = (this.curValueRange[1] - this.curValueRange[0]) / this.graticuleDimensions[3];
     }
+    this.lastRangeChangeTime = (new Date()).getTime();
   }
   this.automaticallyDetermineRanges = function()
   {
@@ -168,6 +191,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
     this.curValueRange = this.figureOutValueRange();
     this.curTimePerPixel = (this.curTimeRange[1] - this.curTimeRange[0]) / this.graticuleDimensions[2];
     this.curValuesPerPixel = (this.curValueRange[1] - this.curValueRange[0]) / this.graticuleDimensions[3];
+    this.lastRangeChangeTime = (new Date()).getTime();
   };
   this.draw = function(adjustRanges)
   {
@@ -406,6 +430,11 @@ function Band(paramName, paramStyleOptions)
     }
     return [min, max];
   }
+  this.clear = function ()
+  {
+    delete this.points;
+    this.points = new Array();
+  };
 }
 function Series(paramName, paramStyleOptions)
 {

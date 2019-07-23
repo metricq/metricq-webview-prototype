@@ -16,6 +16,11 @@ function init()
   document.getElementsByName("metric_to_time")[0].value = dateToHHMMStr(curDate) + ":00";
   masterWrapper = document.querySelector(".master_wrapper");
   ctx = createChart();
+  registerCallbacks();
+}
+
+function registerCallbacks()
+{
   mouseDown.registerCallback(function(evtObj) {
     if(mouseDown.startTarget && "CANVAS" === mouseDown.startTarget.tagName)
     {
@@ -23,6 +28,7 @@ function init()
       || mouseDown.previousPos[1] !== mouseDown.currentPos[1])
       {
         mainGraticule.moveTimeAndValueRanges( (mouseDown.currentPos[0] - mouseDown.previousPos[0]) * -1 * mainGraticule.curTimePerPixel, 0);
+        setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 200);
         mainGraticule.draw(false);
       }
     }
@@ -52,10 +58,79 @@ function init()
     curPos[1] += scrollOffset[1];
     var curTimeValue = mainGraticule.getTimeValueAtPoint(curPos);
     mainGraticule.zoomTimeAndValueAtPoint(curTimeValue, scrollDirection, true, false);
+    setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 200);
     mainGraticule.draw(false);
   });
 }
-function processMetricQData(datapointsJSON)
+function updateAllSeriesesBands(lastUpdateTime)
+{
+  if(mainGraticule.lastRangeChangeTime != lastUpdateTime)
+  {
+    return;
+  }
+  var metricFrom = new Date(mainGraticule.curTimeRange[0]);
+  var metricTo   = new Date(mainGraticule.curTimeRange[1]);
+  var intervalMs = Math.floor((mainGraticule.curTimeRange[1] - mainGraticule.curTimeRange[0]) / 40);
+  var distinctMetrics = new Object();
+  for(var i = 0; i < mainGraticule.series.length; ++i)
+  {
+    var curBaseName = "";
+    var extension = undefined;
+    var curPosOfSlash = mainGraticule.series[i].name.indexOf("/");
+    if(-1 < curPosOfSlash)
+    {
+      curBaseName = mainGraticule.series[i].name.substring(0, curPosOfSlash);
+      extension = mainGraticule.series[i].name.substring(curPosOfSlash + 1);
+    } else
+    {
+      curBaseName = mainGraticule.series[i].name;
+    }
+    if(!distinctMetrics[curBaseName])
+    {
+      distinctMetrics[curBaseName] = new Object();
+    }
+    if(extension)
+    {
+      distinctMetrics[curBaseName][extension] = true;
+    }
+  }
+  for(var i = 0; i < mainGraticule.bands.length; ++i)
+  {
+    var curBaseName = "";
+    var curPosOfSlash = mainGraticule.series[i].name.indexOf("/");
+    if(-1 < curPosOfSlash)
+    {
+      curBaseName = mainGraticule.series[i].name.substring(0, curPosOfSlash);
+    }
+    if(!distinctMetrics[curBaseName])
+    {
+      distinctMetrics[curBaseName] = {
+        min: true,
+        max: true
+      };
+    } else
+    {
+      distinctMetrics[curBaseName]["min"] = true;
+      distinctMetrics[curBaseName]["max"] = true;
+    }
+  }
+  for(var curMetricBase in distinctMetrics)
+  {
+    var extensionArr = new Array();
+    for(var curExtension in distinctMetrics[curMetricBase])
+    {
+      extensionArr.push(curExtension);
+    }
+    var requestMetric = curMetricBase;
+    if(0 < extensionArr.length)
+    {
+      requestMetric += "/(" + extensionArr.join("|") + ")";
+    }
+    fetchMeasureData(metricFrom, metricTo, intervalMs, requestMetric, function(jsonObj) { processMetricQData(jsonObj, false, false); });
+  }
+  mainGraticule.draw();
+}
+function processMetricQData(datapointsJSON, doDraw, doResize)
 {
   console.log(datapointsJSON);
   if(! mainGraticule)
@@ -68,12 +143,12 @@ function processMetricQData(datapointsJSON)
   {
     var metric = datapointsJSON[i];
     var mySeries = mainGraticule.getSeries(metric.target);
-    if(!mySeries)
-    {
-      mySeries = mainGraticule.addSeries(metric.target, defaultSeriesStyling(metric.target));
-    } else
+    if(mySeries)
     {
       mySeries.clear();
+    } else
+    {
+      mySeries = mainGraticule.addSeries(metric.target, defaultSeriesStyling(metric.target));
     }
     for(var j = 0; j < metric.datapoints.length; ++j)
     {
@@ -93,7 +168,15 @@ function processMetricQData(datapointsJSON)
   {
     if(undefined !== distinctMetrics[curMetricBase].min && undefined !== distinctMetrics[curMetricBase].max)
     {
-      var curBand = mainGraticule.addBand(curMetricBase, defaultBandStyling(curMetricBase));
+      var curBand = mainGraticule.getBand(curMetricBase);
+      if(curBand)
+      {
+        curBand.clear();
+      } else
+      {
+        curBand = mainGraticule.addBand(curMetricBase, defaultBandStyling(curMetricBase));
+      }
+
       var minSeries = mainGraticule.getSeries(distinctMetrics[curMetricBase].min);
       for(var i = 0; i < minSeries.points.length; ++i)
       {
@@ -111,7 +194,7 @@ function processMetricQData(datapointsJSON)
     start: (new Date()).getTime(),
     end: 0
   };
-  mainGraticule.draw(true);
+  mainGraticule.draw(doResize);
   timers.drawing.end = (new Date()).getTime();
   showTimers();
 }
@@ -211,7 +294,7 @@ function submitMetricName()
                    document.getElementsByName("metric_to_time"  )[0].value;
   var metricName = document.getElementsByName("metric_name")[0].value;
   var intervalMs = parseInt(document.getElementsByName("metric_interval_ms")[0].value);
-  fetchMeasureData(new Date(metricFrom), new Date(metricTo), intervalMs, metricName, processMetricQData);
+  fetchMeasureData(new Date(metricFrom), new Date(metricTo), intervalMs, metricName, function(jsonObj) { processMetricQData(jsonObj, true, true); });
 }
 
 function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbackFunc)
