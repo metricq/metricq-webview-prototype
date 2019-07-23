@@ -265,9 +265,8 @@ function int32BitsToHex(thirtytwoBitNumber)
 }
 function defaultBandStyling(metricBaseName)
 {
-  var hash = crc32(metricBaseName);
   var options = {
-    color: "rgba(" + ((hash >> 16) & 255)  + ","  + ((hash >> 8) & 255) + "," + (hash & 255) +  ", 0.3)"
+    color: determineColorForMetric(metricBaseName, false)
   }
   return options;
 }
@@ -279,7 +278,7 @@ function defaultSeriesStyling(metricName)
     baseName = metricName.substring(0, metricName.indexOf("/"));
   }
   var options = {
-    color: "#" + int32BitsToHex(crc32(baseName)),
+    color: determineColorForMetric(baseName, true),
     connect: true,
     width: 2,
     lineWidth: 3,
@@ -290,6 +289,17 @@ function defaultSeriesStyling(metricName)
     options.lineDash = [5, 4];
   }
   return options;
+}
+function determineColorForMetric(metricBaseName, isLine)
+{
+  var rgb = hslToRgb((crc32(metricBaseName) >> 24 & 255) / 255.00, 1, 0.46);
+  if(isLine)
+  {
+    return "rgb(" + rgb[0] + "," + rgb[1] + "," + rgb[2] + ")";
+  } else
+  {
+    return "rgba(" + rgb[0]  + ","  + rgb[1] + "," + rgb[2] +  ", 0.3)";
+  }
 }
 
 function showTimers()
