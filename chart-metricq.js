@@ -34,7 +34,17 @@ function init()
     }
     evtObj.preventDefault();
 
-    var scrollDirection = evtObj.deltaY / 15.00;
+    var scrollDirection = evtObj.deltaY;
+    /* scale scrollDirection */
+    /* if firefox */
+    if(-1 < navigator.userAgent.indexOf("Firefox"))
+    {
+      scrollDirection /= 15.00;
+    /* if chrome */
+    } else if(-1 < navigator.userAgent.indexOf("Chrome"))
+    {
+      scrollDirection /= 265.00;
+    }
     var curPos = [evtObj.x - evtObj.target.offsetLeft,
                   evtObj.y - evtObj.target.offsetTop];
     var scrollOffset = calculateScrollOffset(evtObj.target);
