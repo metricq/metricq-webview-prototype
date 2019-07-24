@@ -23,6 +23,7 @@ var stylingOptions = {
     alpha: 1
   }
 }
+var stylingTabs = undefined;
 function init()
 {
   setTimeFields(new Date((new Date()).getTime() - 7200000), new Date());
@@ -32,13 +33,33 @@ function init()
   ctx = createChart();
   registerCallbacks();
 }
+
 function initializeStyleOptions()
 {
-  var stylesLinesEle = document.getElementById("style_options_lines");
-  stylesLinesEle.value = formatJson(JSON.stringify(stylingOptions.series));
-  var stylesBandsEle = document.getElementById("style_options_bands");
-  stylesBandsEle.value = formatJson(JSON.stringify(stylingOptions.band));
-  var stylesColorChoosingEle = document.getElementById("style_options_color_choosing");
+  stylingTabs = new Tabbing(document.querySelector(".style_options_wrapper"));
+  var curTab = stylingTabs.addTab("Options for Lines");
+  var textareaEle = document.createElement("textarea");
+  textareaEle.setAttribute("rows", "10");
+  textareaEle.setAttribute("cols", "60");
+  textareaEle.setAttribute("id", "style_options_lines");
+  textareaEle.value = formatJson(JSON.stringify(stylingOptions.series));
+  textareaEle.addEventListener("keyup", stylingHasChanged);
+  curTab.appendChild(textareaEle);
+
+  curTab = stylingTabs.addTab("Options for Bands");
+  textareaEle = document.createElement("textarea");
+  textareaEle.setAttribute("rows", "10");
+  textareaEle.setAttribute("cols", "60");
+  textareaEle.setAttribute("id", "style_options_bands");
+  textareaEle.value = formatJson(JSON.stringify(stylingOptions.band));
+  textareaEle.addEventListener("keyup", stylingHasChanged);
+  curTab.appendChild(textareaEle);
+
+  curTab = stylingTabs.addTab("determineColorForMetric(metricBaseName)");
+  textareaEle = document.createElement("textarea");
+  textareaEle.setAttribute("rows", "10");
+  textareaEle.setAttribute("cols", "80");
+  textareaEle.setAttribute("id", "style_options_color_choosing");
   var functionSourceFull = determineColorForMetric.toString();
   var functionSourceSplitted = functionSourceFull.split("\n");
   var functionSourceShortened = "";
@@ -46,11 +67,9 @@ function initializeStyleOptions()
   {
     functionSourceShortened += functionSourceSplitted[i].replace(/^ +/,"") + "\n";
   }
-  stylesColorChoosingEle.value = functionSourceShortened;
-
-  stylesLinesEle.addEventListener("keyup", stylingHasChanged);
-  stylesBandsEle.addEventListener("keyup", stylingHasChanged);
-  stylesColorChoosingEle.addEventListener("keyup", stylingHasChanged);
+  textareaEle.value = functionSourceShortened;
+  textareaEle.addEventListener("keyup", stylingHasChanged);
+  curTab.appendChild(textareaEle);
 }
 function formatJson(unformattedJson)
 {
