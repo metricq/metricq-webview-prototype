@@ -225,7 +225,7 @@ function initializePlusButton()
     var inputEle = document.createElement("input");
     inputEle.setAttribute("type", "text");
     inputEle.setAttribute("name", "metric_name[" + i + "]");
-    inputEle.setAttribute("size", "80");
+    inputEle.setAttribute("size", "60");
     inputEle.setAttribute("value", previousElement.value);
     inputEle.setAttribute("id", "metric_name[" + i + "]");
     fieldInputsEle.appendChild(inputEle);
@@ -530,6 +530,8 @@ function submitMetricName()
     var curMetricNameEles = document.getElementsByName("metric_name[" + i + "]");
     if(0 < curMetricNameEles.length)
     {
+      curMetricNameEles[0].parentNode.style.backgroundColor = determineColorForMetric(curMetricNameEles[0].value.split("/")[0]);
+      curMetricNameEles[0].style.backgroundColor = "inherit";
       fetchMeasureData(metricFrom, metricTo, intervalMs, curMetricNameEles[0].value, function(jsonObj) { processMetricQData(jsonObj, false, false); });
     } else
     {
