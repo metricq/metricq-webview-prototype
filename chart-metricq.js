@@ -14,10 +14,11 @@ var stylingOptions = {
     alpha: 0.3
   },
   series: {
+    skip: true,
     color: "default",
     connect: true,
     width: 2,
-    lineWidth: 3,
+    lineWidth: 2,
     dots: false,
     alpha: 1
   }
