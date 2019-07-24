@@ -173,18 +173,20 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
     var newValueDelta = (this.curValueRange[1] - this.curValueRange[0]) * zoomFactor;
     if(zoomTime)
     {
-      this.curTimeRange  = [ pointAt[0] - (newTimeDelta / 2),
-                             pointAt[0] + (newTimeDelta / 2)];
+      var relationalPositionOfPoint = (pointAt[0] - this.curTimeRange[0]) / (this.curTimeRange[1] - this.curTimeRange[0]);
+      this.curTimeRange  = [ pointAt[0] - (newTimeDelta * relationalPositionOfPoint),
+                             pointAt[0] + (newTimeDelta * (1 - relationalPositionOfPoint))];
       this.curTimePerPixel = (this.curTimeRange[1] - this.curTimeRange[0]) / this.graticuleDimensions[2];
     }
     if(zoomValue)
     {
-      this.curValueRange = [ pointAt[1] - (newValueDelta / 2),
-                             pointAt[1] + (newValueDelta / 2)];
+      var relationalPositionOfPoint = (pointAt[1] - this.curValueRange[0]) / (this.curValueRange[1] - this.curValueRange[0]);
+      this.curValueRange  = [ pointAt[1] - (newValueDelta * relationalPositionOfPoint),
+                             pointAt[1] + (newValueDelta * (1 - relationalPositionOfPoint))];
       this.curValuesPerPixel = (this.curValueRange[1] - this.curValueRange[0]) / this.graticuleDimensions[3];
     }
     this.lastRangeChangeTime = (new Date()).getTime();
-  }
+  };
   this.automaticallyDetermineRanges = function(determineTimeRange, determineValueRange)
   {
     if(determineTimeRange)
