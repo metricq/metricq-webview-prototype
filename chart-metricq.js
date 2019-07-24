@@ -34,9 +34,9 @@ function init()
 function initializeStyleOptions()
 {
   var stylesLinesEle = document.getElementById("style_options_lines");
-  stylesLinesEle.value = JSON.stringify(stylingOptions.series).replace(/,/g, ",\n");
+  stylesLinesEle.value = formatJson(JSON.stringify(stylingOptions.series));
   var stylesBandsEle = document.getElementById("style_options_bands");
-  stylesBandsEle.value = JSON.stringify(stylingOptions.band).replace(/,/g, ",\n");
+  stylesBandsEle.value = formatJson(JSON.stringify(stylingOptions.band));
   var stylesColorChoosingEle = document.getElementById("style_options_color_choosing");
   var functionSourceFull = determineColorForMetric.toString();
   var functionSourceSplitted = functionSourceFull.split("\n");
@@ -50,6 +50,83 @@ function initializeStyleOptions()
   stylesLinesEle.addEventListener("keyup", stylingHasChanged);
   stylesBandsEle.addEventListener("keyup", stylingHasChanged);
   stylesColorChoosingEle.addEventListener("keyup", stylingHasChanged);
+}
+function formatJson(unformattedJson)
+{
+  var inString = false;
+  var inEscape = false;
+  var depth = 0;
+  var outStr = "";
+  for(var i = 0, c =""; i < unformattedJson.length; ++i)
+  {
+    c = unformattedJson.charAt(i);
+    if(inString)
+    {
+      if(inEscape)
+      {
+        outStr += "\\" + c;
+        inEscape = false;
+      } else
+      {
+        if("\\" == c)
+        {
+          inEscape = true;
+        } else
+        {
+          if("\"" == c)
+          {
+            inString = false;
+          }
+          outStr += c;
+        }
+      }
+    // else, not in string
+    } else {
+      switch(c)
+      {
+        case "\"":
+          inString = true;
+          outStr += c;
+          break;
+        case ":":
+          outStr += c;
+          outStr += " ";
+          break;
+        case ",":
+          outStr += c;
+          outStr += "\n";
+          outStr += repeatString("  ", depth);
+          break;
+        case "{": /* fall-through */
+        case "[":
+          ++depth;
+          outStr += c;
+          outStr += "\n";
+          outStr += repeatString("  ", depth);
+          break;
+        case "}": /* fall-through */
+        case "]":
+          --depth;
+          outStr += "\n";
+          outStr += repeatString("  ", depth);
+          outStr += c;
+          break;
+        default:
+          outStr += c;
+          break;
+      }
+    }
+  }
+  return outStr;
+}
+function repeatString(baseStr, repetitions)
+{
+  var outStr = "";
+  for(var i = 0; i < repetitions; ++i)
+  {
+    outStr += baseStr;
+  }
+  return outStr;
 }
 // another watchdog like behaving self calling function using setTimeout()
 function stylingHasChanged(evtObj)
@@ -470,7 +547,11 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
   ajaxOpenRequests.push(curRequestId);
   var req = new XMLHttpRequest();
   req.requestId = curRequestId;
-  req.open("POST", "proxy.php", true);
+  /* need to proxy requests because of the
+   * Same-Origin-Policy that prevents cross-site-scripting
+   * but also prevents us to request from another host. */
+  var url = "proxy.php";
+  req.open("POST", url, true);
   req.onreadystatechange = function (callMe) { return function(obj) {
     if(1 == obj.target.readyState)
     {
