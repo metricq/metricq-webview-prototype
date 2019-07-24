@@ -24,7 +24,7 @@ var stylingOptions = {
 }
 function init()
 {
-  initializeTimeFields();
+  setTimeFields(new Date((new Date()).getTime() - 7200000), new Date());
   initializePlusButton();
   initializeStyleOptions();
   masterWrapper = document.querySelector(".master_wrapper");
@@ -176,16 +176,19 @@ function stylingHasChanged(evtObj)
     return;
   }
 }
-function initializeTimeFields()
+function setTimeFields(timeFrom, timeTo)
 {
   var curDate = new Date();
-  var curDayStr = curDate.getFullYear() + "-" + ((curDate.getMonth() + 1) < 10 ? "0" : "") + (curDate.getMonth() + 1) + "-" + (curDate.getDate() < 10 ? "0" : "") + curDate.getDate();
-  document.getElementsByName("metric_from_date")[0].value = curDayStr;
-  document.getElementsByName("metric_to_date")[0].value = curDayStr;
-  document.getElementsByName("metric_from_date")[0].max = curDayStr;
-  document.getElementsByName("metric_to_date")[0].max = curDayStr;
-  document.getElementsByName("metric_from_time")[0].value = dateToHHMMStr(new Date(curDate.getTime() - 7200000)) + ":00";
-  document.getElementsByName("metric_to_time")[0].value = dateToHHMMStr(curDate) + ":00";
+  document.getElementsByName("metric_from_date")[0].value = buildIso8601Date(timeFrom);
+  document.getElementsByName("metric_to_date")[0].value = buildIso8601Date(timeTo);
+  document.getElementsByName("metric_from_date")[0].max = buildIso8601Date(curDate);
+  document.getElementsByName("metric_to_date")[0].max = buildIso8601Date(curDate);
+  document.getElementsByName("metric_from_time")[0].value = dateToHHMMSSStr(timeFrom);
+  document.getElementsByName("metric_to_time")[0].value = dateToHHMMSSStr(timeTo);
+}
+function buildIso8601Date(dateObj)
+{
+  return dateObj.getFullYear() + "-" + ((dateObj.getMonth() + 1) < 10 ? "0" : "") + (dateObj.getMonth() + 1) + "-" + (dateObj.getDate() < 10 ? "0" : "") + dateObj.getDate();
 }
 function initializePlusButton()
 {
@@ -280,6 +283,7 @@ function updateAllSeriesesBands(lastUpdateTime)
   }
   var metricFrom = new Date(mainGraticule.curTimeRange[0]);
   var metricTo   = new Date(mainGraticule.curTimeRange[1]);
+  setTimeFields(metricFrom, metricTo);
   var intervalMs = Math.floor((mainGraticule.curTimeRange[1] - mainGraticule.curTimeRange[0]) / 40);
   var distinctMetrics = new Object();
   for(var i = 0; i < mainGraticule.series.length; ++i)
@@ -430,7 +434,7 @@ function defaultBandStyling(metricBaseName)
 {
   //clone the options
   var options = JSON.parse(JSON.stringify(stylingOptions.band));
-  if("default" === options.color);
+  if("default" === options.color)
   {
     options.color = determineColorForMetric(metricBaseName);
   }

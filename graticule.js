@@ -554,21 +554,9 @@ function Point(paramTime, paramValue)
 }
 function dateToHHMMStr(curDate)
 {
-  return hhmmToStr(curDate.getHours(), curDate.getMinutes());
+  return (curDate.getHours() < 10 ? "0" : "") + curDate.getHours() + ":" + (curDate.getMinutes() < 10 ? "0" : "") + curDate.getMinutes();
 }
-function hhmmToStr(minutes, seconds)
+function dateToHHMMSSStr(curDate)
 {
-  var outStr = "";
-  if(minutes < 10)
-  {
-    outStr += "0";
-  }
-  outStr += minutes;
-  outStr += ":";
-  if(seconds < 10)
-  {
-    outStr += "0";
-  }
-  outStr += seconds;
-  return outStr; 
+  return (curDate.getHours() < 10 ? "0" : "") + curDate.getHours() + ":" + (curDate.getMinutes() < 10 ? "0" : "") + curDate.getMinutes() + ":" + (curDate.getSeconds() < 10 ? "0" : "") + curDate.getSeconds();
 }
