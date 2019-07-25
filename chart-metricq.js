@@ -9,19 +9,36 @@ var ajaxOpenRequests = new Array();
 var ajaxRequestIndex = 1;
 var lastStylingChangeTime = 0;
 var stylingOptions = {
-  band: {
-    color: "default",
-    alpha: 0.3
-  },
-  series: {
-    skip: true,
-    color: "default",
-    connect: true,
-    width: 2,
-    lineWidth: 2,
-    dots: false,
-    alpha: 1
-  }
+  list: [
+    {
+      nameRegex: "series:[^/]+/avg",
+      title: "AVG Series",
+      skip: false,
+      color: "default",
+      connect: true,
+      width: 8,
+      lineWidth: 2,
+      dots: true,
+      alpha: 0.8
+    },
+    {
+      nameRegex: "series:[^/]+/(min|max)",
+      title: "Min/Max Series",
+      skip: true,
+      color: "default",
+      connect: true,
+      width: 2,
+      lineWidth: 2,
+      dots: false,
+      alpha: 1
+    },
+    {
+      nameRegex: "band:.*",
+      title: "All Bands",
+      color: "default",
+      alpha: 0.3
+    }
+  ]
 }
 var stylingTabs = undefined;
 function init()
@@ -37,27 +54,27 @@ function init()
 function initializeStyleOptions()
 {
   stylingTabs = new Tabbing(document.querySelector(".style_options_wrapper"));
-  var curTab = stylingTabs.addTab("Options for Lines");
-  var textareaEle = document.createElement("textarea");
-  textareaEle.setAttribute("rows", "10");
-  textareaEle.setAttribute("cols", "60");
-  textareaEle.setAttribute("id", "style_options_lines");
-  textareaEle.value = formatJson(JSON.stringify(stylingOptions.series));
-  textareaEle.addEventListener("keyup", stylingHasChanged);
-  curTab.appendChild(textareaEle);
-
-  curTab = stylingTabs.addTab("Options for Bands");
-  textareaEle = document.createElement("textarea");
-  textareaEle.setAttribute("rows", "10");
-  textareaEle.setAttribute("cols", "60");
-  textareaEle.setAttribute("id", "style_options_bands");
-  textareaEle.value = formatJson(JSON.stringify(stylingOptions.band));
-  textareaEle.addEventListener("keyup", stylingHasChanged);
-  curTab.appendChild(textareaEle);
+  var curTab, textareaEle;
+  for(var i = 0; i < stylingOptions.list.length; ++i)
+  {
+    var curTitle = stylingOptions.list[i].title;
+    if(!curTitle)
+    {
+      curTitle = "Styling #" + (i + 1);
+    }
+    curTab = stylingTabs.addTab(curTitle);
+    textareaEle = document.createElement("textarea");
+    textareaEle.setAttribute("rows", "12");
+    textareaEle.setAttribute("cols", "60");
+    textareaEle.setAttribute("class", "style_options_list_styles");
+    textareaEle.value = formatJson(JSON.stringify(stylingOptions.list[i]));
+    textareaEle.addEventListener("keyup", stylingHasChanged);
+    curTab.appendChild(textareaEle);
+  }
 
   curTab = stylingTabs.addTab("determineColorForMetric(metricBaseName)");
   textareaEle = document.createElement("textarea");
-  textareaEle.setAttribute("rows", "10");
+  textareaEle.setAttribute("rows", "12");
   textareaEle.setAttribute("cols", "80");
   textareaEle.setAttribute("id", "style_options_color_choosing");
   var functionSourceFull = determineColorForMetric.toString();
@@ -161,8 +178,11 @@ function stylingHasChanged(evtObj)
   if((curTime - lastStylingChangeTime) >= 200)
   {
     try {
-      stylingOptions.series = JSON.parse(document.getElementById("style_options_lines").value);
-      stylingOptions.band = JSON.parse(document.getElementById("style_options_bands").value);
+      var listStyleTextareas = document.querySelectorAll(".style_options_list_styles");
+      for(var i = 0; i < listStyleTextareas.length; ++i)
+      {
+        stylingOptions.list[i] = JSON.parse(listStyleTextareas[i].value);
+      }
       determineColorForMetric = new Function("metricBaseName", document.getElementById("style_options_color_choosing").value);
       document.querySelector(".style_options_wrapper").style.backgroundColor = "rgba(64, 255, 64, 0.5)";
       if(mainGraticule)
@@ -180,6 +200,8 @@ function stylingHasChanged(evtObj)
     } catch(exc)
     {
       console.log("Couldn't parse style Options");
+      /* NOTE: exc actually specifies the line AND column where the error occured
+               tell the user that with a visual pointer */
       console.log(exc);
       document.querySelector(".style_options_wrapper").style.backgroundColor = "rgba(255, 64, 64, 0.5)";
     }
@@ -453,7 +475,7 @@ function int32BitsToHex(thirtytwoBitNumber)
 function defaultBandStyling(metricBaseName)
 {
   //clone the options
-  var options = JSON.parse(JSON.stringify(stylingOptions.band));
+  var options = matchStylingOptions("band:" + metricBaseName);
   if("default" === options.color)
   {
     options.color = determineColorForMetric(metricBaseName);
@@ -468,7 +490,7 @@ function defaultSeriesStyling(metricName)
     baseName = metricName.substring(0, metricName.indexOf("/"));
   }
   //clone the options
-  var options = JSON.parse(JSON.stringify(stylingOptions.series));
+  var options = matchStylingOptions("series:" + metricName);
   if("default" === options.color)
   {
     options.color = determineColorForMetric(baseName);
@@ -478,6 +500,23 @@ function defaultSeriesStyling(metricName)
     options.lineDash = [5, 4];
   }
   return options;
+}
+function matchStylingOptions(fullMetricName)
+{
+  if(typeof fullMetricName != "string")
+  {
+    return undefined;
+  }
+  for(var i = 0; i < stylingOptions.list.length; ++i)
+  {
+    if(stylingOptions.list[i].nameMatch == fullMetricName
+    || fullMetricName.match(new RegExp(stylingOptions.list[i].nameRegex)))
+    {
+      //clone the options
+      return JSON.parse(JSON.stringify(stylingOptions.list[i]));
+    }
+  }
+  return undefined;
 }
 function determineColorForMetric(metricBaseName)
 {
@@ -517,7 +556,7 @@ function createChart()
   wrapperEle.style.width = canvasSize[0] + pixelsLeft;
   wrapperEle.style.height = canvasSize[1] + 80;
   var headingEle = document.createElement("div");
-  headingEle.appendChild(document.createTextNode("no heading"));
+  headingEle.appendChild(document.createTextNode("no metric loaded yet"));
   headingEle.setAttribute("class", "graticule_heading");
   var canvasEle = document.createElement("canvas");
   canvasEle.width = canvasSize[0] + pixelsLeft;

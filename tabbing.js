@@ -88,7 +88,6 @@ function Tabbing(paramParentElement)
   };
   this.focusTab = function (tabName)
   {
-    console.log("Intending to focus tab \"" + tabName + "\"");
     var oldMainTab = this.getTabDescription(this.visibleTabHeadings[0].title);
     var i = this.visibleTabsCount - 1;
     for(var j = 0; j < this.visibleTabsCount; ++j)
