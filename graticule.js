@@ -234,6 +234,13 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
   {
     for(var i = 0; i < this.bands.length; ++i)
     {
+      /* connectionType is responsible for the way the
+       * data points will be connected
+       * 1 = direct
+       * 2 = last
+       * 3 = next
+       */
+      var connectionType = 1;
       if(this.bands[i].styleOptions)
       {
         if(this.bands[i].styleOptions.skip)
@@ -248,9 +255,23 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
         {
           this.ctx.globalAlpha = this.bands[i].styleOptions.alpha;
         }
+        if(this.bands[i].styleOptions.connect)
+        {
+          if("direct" == this.bands[i].styleOptions.connect)
+          {
+            connectionType = 1;
+          } else if("last" == this.bands[i].styleOptions.connect)
+          {
+            connectionType = 2;
+          } else if("next" == this.bands[i].styleOptions.connect)
+          {
+            connectionType = 3;
+          }
+        }
       }
-      
-      for(var j = 0,x,y; j < this.bands[i].points.length; ++j)
+     
+      var switchOverIndex = Math.floor(this.bands[i].points.length / 2) + 1; 
+      for(var j = 0,x,y,previousX,previousY; j < this.bands[i].points.length; ++j)
       {
         x = this.graticuleDimensions[0] + Math.round((this.bands[i].points[j].time - timeRange[0]) / timePerPixel);
         y = this.graticuleDimensions[1] + (this.graticuleDimensions[3] - Math.round((this.bands[i].points[j].value - valueRange[0]) / valuesPerPixel));
@@ -260,8 +281,43 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
           this.ctx.moveTo(x, y);
         } else
         {
-          this.ctx.lineTo(x,y);
+          // connect direct
+          if(1 == connectionType)
+          {
+            this.ctx.lineTo(x,y);
+          } else
+          {
+            if(j < switchOverIndex)
+            {
+              // connect last
+              if(2 == connectionType)
+              {
+                this.ctx.lineTo(previousX, y);
+                this.ctx.lineTo(x, y);
+              // connect next
+              } else if(3 == connectionType)
+              {
+                this.ctx.lineTo(x, previousY);
+                this.ctx.lineTo(x, y);
+              }
+            } else
+            {
+              // connect last
+              if(2 == connectionType)
+              {
+                this.ctx.lineTo(x, previousY);
+                this.ctx.lineTo(x, y);
+              // connext next
+              } else if(3 == connectionType)
+              {
+                this.ctx.lineTo(previousX, y);
+                this.ctx.lineTo(x, y);
+              }
+            }
+          }
         }
+        previousX = x;
+        previousY = y;
       }
       if(0 < this.bands[i].points.length)
       {
@@ -277,7 +333,13 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
     {
       var pointWidth = 2;
       var halfPointWidth = 1;
-      var drawALine = false;
+      /* drawLineTypes:
+       *  0 = none,
+       *  1 = direct,
+       *  2 = last,
+       *  3 = next
+       */
+      var drawLineType = 0;
       var drawDots = true;
       if(this.series[i].styleOptions)
       {
@@ -295,18 +357,32 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
         }
         if(this.series[i].styleOptions.connect)
         {
-          drawALine = true;
-          if(this.series[i].styleOptions.color)
+          if("none" == this.series[i].styleOptions.connect)
           {
-            this.ctx.strokeStyle = this.series[i].styleOptions.color;
-          }
-          if(this.series[i].styleOptions.lineWidth)
-          {
-            this.ctx.lineWidth = this.series[i].styleOptions.lineWidth;
-          }
-          if(this.series[i].styleOptions.lineDash)
-          {
-            this.ctx.setLineDash(this.series[i].styleOptions.lineDash);
+            drawLineType = 0;
+          } else {
+            if("direct" == this.series[i].styleOptions.connect)
+            {
+              drawLineType = 1;
+            } else if("last" == this.series[i].styleOptions.connect)
+            {
+              drawLineType = 2;
+            } else if("next" == this.series[i].styleOptions.connect)
+            {
+              drawLineType = 3;
+            }
+            if(this.series[i].styleOptions.color)
+            {
+              this.ctx.strokeStyle = this.series[i].styleOptions.color;
+            }
+            if(this.series[i].styleOptions.lineWidth)
+            {
+              this.ctx.lineWidth = this.series[i].styleOptions.lineWidth;
+            }
+            if(this.series[i].styleOptions.lineDash)
+            {
+              this.ctx.setLineDash(this.series[i].styleOptions.lineDash);
+            }
           }
         }
         if(!this.series[i].styleOptions.dots)
@@ -320,11 +396,11 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
       }
       halfPointWidth = Math.round(pointWidth / 2);
       
-      for(var j = 0,x,y; j < this.series[i].points.length; ++j)
+      for(var j = 0,x,y,previousX,previousY; j < this.series[i].points.length; ++j)
       {
         x = this.graticuleDimensions[0] + Math.round((this.series[i].points[j].time - timeRange[0]) / timePerPixel);
         y = this.graticuleDimensions[1] + (this.graticuleDimensions[3] - Math.round((this.series[i].points[j].value - valueRange[0]) / valuesPerPixel));
-        if(drawALine)
+        if(0 < drawLineType)
         {
           if(0 == j)
           {
@@ -332,15 +408,31 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
             this.ctx.moveTo(x, y);
           } else
           {
-            this.ctx.lineTo(x,y);
+            // connect direct
+            if(1 == drawLineType)
+            {
+              this.ctx.lineTo(x, y);
+            // connect last
+            } else if(2 == drawLineType)
+            {
+              this.ctx.lineTo(previousX,y);
+              this.ctx.lineTo(x, y);
+            // connect next
+            } else if(3 == drawLineType)
+            {
+              this.ctx.lineTo(x, previousY);
+              this.ctx.lineTo(x, y);
+            }
           }
         }
         if(drawDots)
         {
           this.ctx.fillRect(x - halfPointWidth, y - halfPointWidth, pointWidth, pointWidth);
         }
+        previousX = x;
+        previousY = y;
       }
-      if(drawALine)
+      if(0 < drawLineType)
       {
         this.ctx.stroke();
         this.ctx.closePath();

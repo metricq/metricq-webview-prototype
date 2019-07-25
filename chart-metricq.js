@@ -15,7 +15,7 @@ var stylingOptions = {
       title: "AVG Series",
       skip: false,
       color: "default",
-      connect: true,
+      connect: "last",
       width: 8,
       lineWidth: 2,
       lineDash: [5, 4],
@@ -27,7 +27,7 @@ var stylingOptions = {
       title: "Min/Max Series",
       skip: true,
       color: "default",
-      connect: true,
+      connect: "last",
       width: 2,
       lineWidth: 2,
       dots: false,
@@ -36,6 +36,7 @@ var stylingOptions = {
     {
       nameRegex: "band:.*",
       title: "All Bands",
+      connect: "last", 
       color: "default",
       alpha: 0.3
     }
