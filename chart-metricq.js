@@ -333,16 +333,55 @@ function initializePlusButton()
 }
 function registerCallbacks()
 {
-  mouseDown.registerCallback(function(evtObj) {
+  mouseDown.registerDragCallback(function(evtObj) {
     if(mainGraticule && mouseDown.startTarget && "CANVAS" === mouseDown.startTarget.tagName)
     {
       if(mouseDown.previousPos[0] !== mouseDown.currentPos[0]
       || mouseDown.previousPos[1] !== mouseDown.currentPos[1])
       {
-        mainGraticule.moveTimeAndValueRanges( (mouseDown.currentPos[0] - mouseDown.previousPos[0]) * -1 * mainGraticule.curTimePerPixel, 0);
-        setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 200);
-        mainGraticule.draw(false);
+        if(keyDown.is(16))
+        {
+          mainGraticule.draw(false);
+          ctx.fillStyle = "rgba(0,0,0,0.2)";
+          var minXPos = mouseDown.currentPos[0];
+          if(mouseDown.startPos[0] < minXPos)
+          {
+            minXPos = mouseDown.startPos[0];
+          }
+          var maxXPos = mouseDown.currentPos[0];
+          if(mouseDown.startPos[0] > maxXPos)
+          {
+            maxXPos = mouseDown.startPos[0];
+          }
+          ctx.fillRect(minXPos, mainGraticule.graticuleDimensions[1], maxXPos - minXPos, mainGraticule.graticuleDimensions[3]);
+        } else
+        {
+          mainGraticule.moveTimeAndValueRanges( (mouseDown.currentPos[0] - mouseDown.previousPos[0]) * -1 * mainGraticule.curTimePerPixel, 0);
+          setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 150);
+          mainGraticule.draw(false);
+        }
       }
+    }
+  });
+  mouseDown.registerDropCallback(function(evtObj) {
+    if(keyDown.is(16) && mainGraticule && mouseDown.startTarget && "CANVAS" === mouseDown.startTarget.tagName)
+    {
+      var posEnd   = mainGraticule.getTimeValueAtPoint( mouseDown.relativeStartPos );
+      var posStart = mainGraticule.getTimeValueAtPoint( calculateActualMousePos(evtObj));
+      if(!posEnd || !posStart)
+      {
+        return;
+      }
+      if(posEnd[0] < posStart[0])
+      {
+        var swap = posEnd;
+        posEnd = posStart;
+        posStart = swap;
+      }
+      mainGraticule.setTimeRange([posStart[0], posEnd[0]]);
+      setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 200);
+      mainGraticule.draw(false);
+
     }
   });
   document.getElementsByTagName("canvas")[0].addEventListener("wheel", function(evtObj) {
@@ -363,19 +402,24 @@ function registerCallbacks()
     {
       scrollDirection /= 265.00;
     }
-    var curPos = [evtObj.x - evtObj.target.offsetLeft,
-                  evtObj.y - evtObj.target.offsetTop];
-    var scrollOffset = calculateScrollOffset(evtObj.target);
-    curPos[0] += scrollOffset[0];
-    curPos[1] += scrollOffset[1];
+    var curPos = calculateActualMousePos(evtObj);
     var curTimeValue = mainGraticule.getTimeValueAtPoint(curPos);
     if(curTimeValue)
     {
       mainGraticule.zoomTimeAndValueAtPoint(curTimeValue, scrollDirection, true, false);
-      setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 200);
+      setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 150);
       mainGraticule.draw(false);
     }
   });
+}
+function calculateActualMousePos(evtObj)
+{
+  var curPos = [evtObj.x - evtObj.target.offsetLeft,
+                evtObj.y - evtObj.target.offsetTop];
+  var scrollOffset = calculateScrollOffset(evtObj.target);
+  curPos[0] += scrollOffset[0];
+  curPos[1] += scrollOffset[1];
+  return curPos;
 }
 function updateAllSeriesesBands(lastUpdateTime)
 {
@@ -661,6 +705,11 @@ function submitMetricName()
 
 function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbackFunc)
 {
+  if(timeStart.getTime() >= timeEnd.getTime())
+  {
+    alert("only fetching with timeStart < timeEnd allowed!");
+    return;
+  }
   var from = timeStart.toISOString();
   var to = timeEnd.toISOString();
   var target = metricToFetch;
@@ -672,10 +721,7 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
   ajaxOpenRequests.push(curRequestId);
   var req = new XMLHttpRequest();
   req.requestId = curRequestId;
-  /* need to proxy requests because of the
-   * Same-Origin-Policy that prevents cross-site-scripting
-   * but also prevents us to request from another host. */
-  var url = "proxy.php";
+  var url = "https://grafana.metricq.zih.tu-dresden.de/metricq/query";
   req.open("POST", url, true);
   req.onreadystatechange = function (callMe) { return function(obj) {
     if(1 == obj.target.readyState)
@@ -751,6 +797,7 @@ function calculateScrollOffset(curLevelElement)
 }
 var mouseDown = {
   startPos: undefined,
+  relativeStartPos: undefined,
   currentPos: undefined,
   previousPos: undefined,
   endPos: undefined,
@@ -760,7 +807,8 @@ var mouseDown = {
   endTime: 0,
   startTarget: undefined,
   endTarget: undefined,
-  dragDropCallbacks: new Array(),
+  dragCallbacks: new Array(),
+  dropCallbacks: new Array(),
   calcRelativePos: function(evtObj)
   {
     var curPos = [
@@ -789,6 +837,7 @@ var mouseDown = {
     mouseDown.startPos = [ curPos[0], curPos[1]];
     mouseDown.currentPos = [ curPos[0], curPos[1]];
     mouseDown.previousPos = [ curPos[0], curPos[1]];
+    mouseDown.relativeStartPos = calculateActualMousePos(evtObj);
     mouseDown.isDown = true;
   },
   moving: function(evtObj)
@@ -797,9 +846,9 @@ var mouseDown = {
     {
       mouseDown.previousPos = mouseDown.currentPos;
       mouseDown.currentPos = mouseDown.calcRelativePos(evtObj);
-      for(var i = 0; i < mouseDown.dragDropCallbacks.length; ++i)
+      for(var i = 0; i < mouseDown.dragCallbacks.length; ++i)
       {
-        mouseDown.dragDropCallbacks[i](evtObj);
+        mouseDown.dragCallbacks[i](evtObj);
       }
     }
   },
@@ -810,14 +859,53 @@ var mouseDown = {
     mouseDown.duration = mouseDown.endTime - mouseDown.startTime;
     mouseDown.endTarget = evtObj.target;
     mouseDown.isDown = false;
+    for(var i = 0; i < mouseDown.dropCallbacks.length; ++i)
+    {
+      mouseDown.dropCallbacks[i](evtObj);
+    }
   },
-  registerCallback: function(callbackFunc)
+  registerDragCallback: function(callbackFunc)
   {
-    mouseDown.dragDropCallbacks.push(callbackFunc);
+    mouseDown.dragCallbacks.push(callbackFunc);
+  },
+  registerDropCallback: function(callbackFunc)
+  {
+    mouseDown.dropCallbacks.push(callbackFunc);
   }
 }
+var keyDown = {
+  keys: new Array(),
+  keyDown: function(evtObj)
+  {
+    keyDown.keys.push(evtObj.keyCode);
+  },
+  keyUp: function(evtObj)
+  {
+    for(var i = 0; i < keyDown.keys.length; ++i)
+    {
+      if(evtObj.keyCode == keyDown.keys[i])
+      {
+        keyDown.keys.splice(i, 1);
+        --i;
+      }
+    }
+  },
+  is: function (keyCode)
+  {
+    for(var i = 0; i < keyDown.keys.length; ++i)
+    {
+      if(keyDown.keys[i] == keyCode)
+      {
+        return true;
+      }
+    }
+    return false;
+  }
+};
 
 document.addEventListener("DOMContentLoaded", init);
 document.addEventListener("mousedown", mouseDown.startClick);
 document.addEventListener("mousemove", mouseDown.moving);
 document.addEventListener("mouseup", mouseDown.endClick);
+document.addEventListener("keydown", keyDown.keyDown);
+document.addEventListener("keyup", keyDown.keyUp);

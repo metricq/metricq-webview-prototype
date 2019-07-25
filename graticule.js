@@ -166,6 +166,11 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
     this.curValueRange[1] += moveValueBy;
     this.lastRangeChangeTime = (new Date()).getTime();
   };
+  this.setTimeRange = function (newTimeRange)
+  {
+    this.curTimeRange = [newTimeRange[0], newTimeRange[1]];
+    this.curTimePerPixel = (this.curTimeRange[1] - this.curTimeRange[0]) / this.graticuleDimensions[2];
+  };
   this.zoomTimeAndValueAtPoint = function(pointAt, zoomDirection, zoomTime, zoomValue)
   {
     var zoomFactor = 1 + zoomDirection;
@@ -174,9 +179,8 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
     if(zoomTime)
     {
       var relationalPositionOfPoint = (pointAt[0] - this.curTimeRange[0]) / (this.curTimeRange[1] - this.curTimeRange[0]);
-      this.curTimeRange  = [ pointAt[0] - (newTimeDelta * relationalPositionOfPoint),
-                             pointAt[0] + (newTimeDelta * (1 - relationalPositionOfPoint))];
-      this.curTimePerPixel = (this.curTimeRange[1] - this.curTimeRange[0]) / this.graticuleDimensions[2];
+      this.setTimeRange([ pointAt[0] - (newTimeDelta * relationalPositionOfPoint),
+                          pointAt[0] + (newTimeDelta * (1 - relationalPositionOfPoint))]);
     }
     if(zoomValue)
     {
@@ -191,8 +195,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
   {
     if(determineTimeRange)
     {
-      this.curTimeRange = this.figureOutTimeRange();
-      this.curTimePerPixel = (this.curTimeRange[1] - this.curTimeRange[0]) / this.graticuleDimensions[2];
+      this.setTimeRange(this.figureOutTimeRange());
     }
     if(determineValueRange)
     {
