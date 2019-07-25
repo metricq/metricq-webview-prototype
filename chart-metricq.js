@@ -177,14 +177,16 @@ function stylingHasChanged(evtObj)
   }
   if((curTime - lastStylingChangeTime) >= 200)
   {
+    var lastParsedTextarea = undefined;
     try {
       var listStyleTextareas = document.querySelectorAll(".style_options_list_styles");
       for(var i = 0; i < listStyleTextareas.length; ++i)
       {
-        stylingOptions.list[i] = JSON.parse(listStyleTextareas[i].value);
+        lastParsedTextarea = listStyleTextareas[i];
+        stylingOptions.list[i] = JSON.parse(lastParsedTextarea.value);
       }
-      determineColorForMetric = new Function("metricBaseName", document.getElementById("style_options_color_choosing").value);
-      document.querySelector(".style_options_wrapper").style.backgroundColor = "rgba(64, 255, 64, 0.5)";
+      lastParsedTextarea = document.getElementById("style_options_color_choosing");
+      determineColorForMetric = new Function("metricBaseName", lastParsedTextarea.value);
       if(mainGraticule)
       {
         for(var i = 0; i < mainGraticule.series.length; ++i)
@@ -197,12 +199,11 @@ function stylingHasChanged(evtObj)
         }
         mainGraticule.draw(false);
       }
+      document.querySelector(".style_options_wrapper").style.backgroundColor = "rgba(64, 255, 64, 0.5)";
     } catch(exc)
     {
       console.log("Couldn't parse style Options");
-      /* NOTE: exc actually specifies the line AND column where the error occured
-               tell the user that with a visual pointer */
-      console.log(exc);
+      handleStylingTextareaError(exc, lastParsedTextarea);
       document.querySelector(".style_options_wrapper").style.backgroundColor = "rgba(255, 64, 64, 0.5)";
     }
   } else
@@ -217,6 +218,58 @@ function stylingHasChanged(evtObj)
     }
     return;
   }
+}
+function handleStylingTextareaError(exc, lastParsedTextarea)
+{
+  var errorAt = exc.message.match(/ at line ([0-9]+) column ([0-9]+) /);
+  if(errorAt)
+  {
+    putErrorMarkerAt(lastParsedTextarea, errorAt[1], errorAt[2]);
+  } else
+  {
+    errorAt = exc.message.match(/in JSON at position ([0-9]+)/);
+    if(errorAt)
+    {
+      var positionAt = parseInt(errorAt[1]);
+      var lineAt = 0;
+      var columnAt = 0;
+      for(var i = 0; i < positionAt; ++i)
+      {
+        if("\n" == lastParsedTextarea.value.charAt(i))
+        {
+          ++lineAt;
+          columnAt = 0;
+        } else
+        {
+          ++columnAt;
+        }
+      }
+      putErrorMarkerAt(lastParsedTextarea, lineAt, columnAt);
+    }
+  }
+}
+function putErrorMarkerAt(textareaErrorHappened, lineAt, columnAt)
+{
+  var x = textareaErrorHappened.parentNode.parentNode.parentNode.offsetLeft + columnAt * 6;
+  var y = textareaErrorHappened.offsetTop + lineAt * 16;
+  var arrowEle = document.createElement("div");
+  arrowEle.style.position = "absolute";
+  arrowEle.style.fontSize = "24pt";
+  arrowEle.style.left = x;
+  arrowEle.style.top = y;
+  arrowEle.style.transform = "rotate(270deg)";
+  arrowEle.appendChild(document.createTextNode("➜"));
+  document.getElementsByTagName("body")[0].appendChild(arrowEle);
+  arrowEle.animate([{ top: (y + 70) + "px" },
+                    { top: y + "px" }],
+                   {
+                     duration: 700,
+                     direction: 'alternate',
+                     iterations: Infinity,
+                     fill: 'forwards',
+                     easing: 'ease'
+                   });
+  setTimeout(function(ele) { return function() { ele.parentNode.removeChild(ele);}; }(arrowEle), 2000);
 }
 function setTimeFields(timeFrom, timeTo)
 {
