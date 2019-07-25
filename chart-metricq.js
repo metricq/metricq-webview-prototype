@@ -599,10 +599,6 @@ function defaultSeriesStyling(metricName)
   {
     options.color = determineColorForMetric(baseName);
   }
-  if(metricName.lastIndexOf("avg") == metricName.length - 3 && metricName.length >= 3)
-  {
-    options.lineDash = [5, 4];
-  }
   return options;
 }
 function matchStylingOptions(fullMetricName)
