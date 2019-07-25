@@ -11,6 +11,13 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
   this.series = new Array();
   this.bands = new Array();
   this.lastRangeChangeTime = 0;
+  this.resetData = function()
+  {
+    delete this.series;
+    delete this.bands;
+    this.series = new Array();
+    this.bands = new Array();
+  }
   this.clearSeries = function(seriesSpecifier)
   {
     var curSeries = this.getSeries(seriesSpecifier);

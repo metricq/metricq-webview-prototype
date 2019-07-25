@@ -678,6 +678,10 @@ function calcIntervalMs(metricFrom, metricTo)
 }
 function submitMetricName()
 {
+  if(mainGraticule)
+  {
+    mainGraticule.resetData();
+  }
   var metricFrom = new Date(document.getElementsByName("metric_from_date")[0].value + " " + 
                             document.getElementsByName("metric_from_time")[0].value);
   var metricTo   = new Date(document.getElementsByName("metric_to_date"  )[0].value + " " +
