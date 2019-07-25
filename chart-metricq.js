@@ -390,25 +390,39 @@ function registerCallbacks()
       return;
     }
     evtObj.preventDefault();
-
-    var scrollDirection = evtObj.deltaY;
-    /* scale scrollDirection */
-    /* if firefox */
-    if(-1 < navigator.userAgent.indexOf("Firefox"))
+    if(evtObj.deltaX) // horizontal scrolling
     {
-      scrollDirection /= 15.00;
-    /* if chrome */
-    } else if(-1 < navigator.userAgent.indexOf("Chrome"))
-    {
-      scrollDirection /= 265.00;
-    }
-    var curPos = calculateActualMousePos(evtObj);
-    var curTimeValue = mainGraticule.getTimeValueAtPoint(curPos);
-    if(curTimeValue)
-    {
-      mainGraticule.zoomTimeAndValueAtPoint(curTimeValue, scrollDirection, true, false);
-      setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 150);
+      var deltaRange = mainGraticule.curTimeRange[1] - mainGraticule.curTimeRange[0];
+      if(0 > evtObj.deltaX)
+      {
+        mainGraticule.setTimeRange([mainGraticule.curTimeRange[0] - deltaRange * 0.2, mainGraticule.curTimeRange[1] - deltaRange * 0.2]);
+      } else if(0 < evtObj.deltaX)
+      {
+        mainGraticule.setTimeRange([mainGraticule.curTimeRange[0] + deltaRange * 0.2, mainGraticule.curTimeRange[1] + deltaRange * 0.2]);
+      }
+      setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 200);
       mainGraticule.draw(false);
+    } else // vertical scrolling
+    {
+      var scrollDirection = evtObj.deltaY;
+      /* scale scrollDirection */
+      /* if firefox */
+      if(-1 < navigator.userAgent.indexOf("Firefox"))
+      {
+        scrollDirection /= 15.00;
+      /* if chrome */
+      } else if(-1 < navigator.userAgent.indexOf("Chrome"))
+      {
+        scrollDirection /= 265.00;
+      }
+      var curPos = calculateActualMousePos(evtObj);
+      var curTimeValue = mainGraticule.getTimeValueAtPoint(curPos);
+      if(curTimeValue)
+      {
+        mainGraticule.zoomTimeAndValueAtPoint(curTimeValue, scrollDirection, true, false);
+        setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 150);
+        mainGraticule.draw(false);
+      }
     }
   });
 }

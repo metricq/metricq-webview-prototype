@@ -85,6 +85,129 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
     this.bands.push(newBand);
     return newBand;
   };
+  this.figureOutTimeSteps = function(maxStepsAllowed)
+  {
+var measureStartTime = (new Date()).getTime();
+    var startTime = new Date(this.curTimeRange[0]);
+    var deltaTime = this.curTimeRange[1] - this.curTimeRange[0];
+    var timeStretches = [
+      86400000 * 365, // year
+      86400000 * 30, // month
+      86400000, // day
+      3600000, // hour
+      60000, // minute
+      1000, // second
+      1 // millisecond
+    ];
+    var i;
+    for(i = 0; i < 7; ++i)
+    {
+      if((deltaTime / timeStretches[i]) < (maxStepsAllowed * 0.7))
+      {
+        continue
+      } else
+      {
+        break;
+      }
+    }
+    if(7 == i)
+    {
+      i = 6;
+    }
+    var curRangeMultiplier = Math.floor((deltaTime / timeStretches[i]) / maxStepsAllowed);
+    if(1 > curRangeMultiplier)
+    {
+      curRangeMultiplier = 1;
+    }
+    var stepSize = timeStretches[i] * curRangeMultiplier;
+    var stepStart = undefined;
+    switch(i)
+    {
+      case 0:
+        stepStart = new Date(startTime.getFullYear() + "-01-01 00:00:00");
+        break;
+      case 1:
+        stepStart = new Date(startTime.getFullYear() + "-" + (startTime.getMonth() + 1) + "-01 00:00:00");
+        break;
+      case 2:
+        stepStart = new Date(startTime.getFullYear() + "-" + (startTime.getMonth() + 1) + "-" + startTime.getDate() + " 00:00:00");
+        break;
+      case 3:
+        stepStart = new Date(startTime.getFullYear() + "-" + (startTime.getMonth() + 1) + "-" + startTime.getDate() + " " + startTime.getHours() +":00:00");
+        break;
+      case 4:
+        stepStart = new Date(startTime.getFullYear() + "-" + (startTime.getMonth() + 1) + "-" + startTime.getDate() + " " + startTime.getHours() +":" + startTime.getMinutes() + ":00");
+        break;
+      case 5:
+        stepStart = new Date(startTime.getFullYear() + "-" + (startTime.getMonth() + 1) + "-" + startTime.getDate() + " " + startTime.getHours() +":" + startTime.getMinutes() + ":" + startTime.getSeconds());
+        break;
+      case 6:
+        stepStart = startTime;
+        break;
+    }
+    while(stepStart.getTime() < this.curTimeRange[0])
+    {
+      stepStart = new Date(stepStart.getTime() + stepSize);
+    }
+    var outArr = new Array();
+    var monthNames = ["January", "February", "March", "April", "May", "June",
+                      "July", "August", "September", "October", "November", "December"];
+    var previousCurDate = undefined;
+    for(var j = stepStart.getTime(); j < this.curTimeRange[1]; j += stepSize)
+    {
+      var curDate = new Date(j);
+      switch(i)
+      {
+        case 0:
+          outArr.push([ j, "" + curDate.getFullYear()]);
+          break;
+        case 1:
+          if(0 == curDate.getMonth() || !previousCurDate)
+          {
+            outArr.push([ j, monthNames[curDate.getMonth()] + " " + curDate.getFullYear()]);
+          } else
+          {
+            outArr.push([ j, monthNames[curDate.getMonth()]]);
+          }
+          break;
+        case 2:
+          if(1 == curDate.getDate() || !previousCurDate)
+          {
+            outArr.push([j, curDate.getDate() + " " + monthNames[curDate.getMonth()]]);
+          } else
+          {
+            outArr.push([j, "" + curDate.getDate()]);
+          }
+          break;
+        case 3:
+          if(0 == curDate.getHours() || !previousCurDate || previousCurDate.getDate() != curDate.getDate())
+          {
+            outArr.push([j, curDate.getDate() + " " + monthNames[curDate.getMonth()] + " " + (curDate.getHours() < 10 ? "0" : "") + curDate.getHours() + ":00"]);
+          } else
+          {
+            outArr.push([j, (curDate.getHours() < 10 ? "0" : "") + curDate.getHours() + ":00"]);
+          }
+          break;
+        case 4:
+          outArr.push([j, (curDate.getHours() < 10 ? "0" : "") + curDate.getHours() + ":" + (curDate.getMinutes() < 10 ? "0" : "") + curDate.getMinutes()]);
+          break;
+        case 5:
+          outArr.push([j, (curDate.getHours() < 10 ? "0" : "") + curDate.getHours() + ":" + (curDate.getMinutes() < 10 ? "0" : "") + curDate.getMinutes() + ":" + (curDate.getSeconds() < 10 ? "0" : "") + curDate.getSeconds()]);
+          break;
+        case 6:
+          if(0 == curDate.getMilliseconds() || !previousCurDate)
+          {
+            outArr.push([j, (curDate.getHours() < 10 ? "0" : "") + curDate.getHours() + ":" + (curDate.getMinutes() < 10 ? "0" : "") + curDate.getMinutes() + ":" + (curDate.getSeconds() < 10 ? "0" : "") + curDate.getSeconds() + "." + curDate.getMilliseconds()]);
+          } else
+          {
+            outArr.push([j, (curDate.getSeconds() < 10 ? "0" : "") + curDate.getSeconds() + "." + curDate.getMilliseconds()]);
+          }
+      }
+      previousCurDate = curDate;
+    }
+console.log((new Date()).getTime() - measureStartTime);
+    return outArr;
+  };
   this.figureOutLogarithmicSteps = function(rangeStart, rangeEnd, maxStepsAllowed)
   {
     var deltaRange = rangeEnd - rangeStart;
@@ -125,21 +248,23 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
   {
     this.ctx.fillStyle = "rgba(192,192,192,0.5)";
     this.ctx.font = "14px Sans";
-    var minDistanceBetweenGridLines = 40;
+    var minDistanceBetweenGridLines = 110;
     var maxStepsCount = Math.floor(this.graticuleDimensions[2] / minDistanceBetweenGridLines);
-    var xAxisSteps = this.figureOutLogarithmicSteps(timeRange[0], timeRange[1], maxStepsCount);
-    for(var i = 0; i < xAxisSteps[i]; ++i)
+    var xAxisSteps = this.figureOutTimeSteps(maxStepsCount);
+    for(var i = 0; i < xAxisSteps.length; ++i)
     {
-      var x = this.graticuleDimensions[0] + ((xAxisSteps[i] - timeRange[0]) / timePerPixel);
+      var textWidth = this.ctx.measureText(xAxisSteps[i][1]).width;
+      var x = Math.round(this.graticuleDimensions[0] + ((xAxisSteps[i][0] - timeRange[0]) / timePerPixel));
       this.ctx.fillRect( x, this.graticuleDimensions[1], 2, this.graticuleDimensions[3]);
-      this.ctx.fillText(dateToHHMMStr(new Date(xAxisSteps[i])), x - 20, this.graticuleDimensions[1] + this.graticuleDimensions[3] + this.pixelsBottom /2);
+      this.ctx.fillText(xAxisSteps[i][1], x - Math.floor(textWidth / 2), this.graticuleDimensions[1] + this.graticuleDimensions[3] + this.pixelsBottom /2);
     }
 
+    minDistanceBetweenGridLines = 30;
     maxStepsCount = Math.floor(this.graticuleDimensions[3] / minDistanceBetweenGridLines);
     var yAxisSteps = this.figureOutLogarithmicSteps(valueRange[0], valueRange[1], maxStepsCount);
-    for(var i = 0; i < yAxisSteps[i]; ++i)
+    for(var i = 0; i < yAxisSteps.length; ++i)
     {
-      var y = this.graticuleDimensions[3] - ((yAxisSteps[i] - valueRange[0]) / valuesPerPixel) + this.graticuleDimensions[1];
+      var y = Math.round(this.graticuleDimensions[3] - ((yAxisSteps[i] - valueRange[0]) / valuesPerPixel) + this.graticuleDimensions[1]);
       if(y >= this.graticuleDimensions[1])
       {
         this.ctx.fillRect( this.graticuleDimensions[0], y, this.graticuleDimensions[2], 2);
