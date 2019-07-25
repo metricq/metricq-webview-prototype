@@ -18,7 +18,8 @@ var stylingOptions = {
       connect: true,
       width: 8,
       lineWidth: 2,
-      dots: true,
+      lineDash: [5, 4],
+      dots: false,
       alpha: 0.8
     },
     {
@@ -64,7 +65,7 @@ function initializeStyleOptions()
     }
     curTab = stylingTabs.addTab(curTitle);
     textareaEle = document.createElement("textarea");
-    textareaEle.setAttribute("rows", "12");
+    textareaEle.setAttribute("rows", "13");
     textareaEle.setAttribute("cols", "60");
     textareaEle.setAttribute("class", "style_options_list_styles");
     textareaEle.value = formatJson(JSON.stringify(stylingOptions.list[i]));
@@ -74,7 +75,7 @@ function initializeStyleOptions()
 
   curTab = stylingTabs.addTab("determineColorForMetric(metricBaseName)");
   textareaEle = document.createElement("textarea");
-  textareaEle.setAttribute("rows", "12");
+  textareaEle.setAttribute("rows", "13");
   textareaEle.setAttribute("cols", "80");
   textareaEle.setAttribute("id", "style_options_color_choosing");
   var functionSourceFull = determineColorForMetric.toString();
@@ -260,8 +261,10 @@ function putErrorMarkerAt(textareaErrorHappened, lineAt, columnAt)
   arrowEle.style.transform = "rotate(270deg)";
   arrowEle.appendChild(document.createTextNode("➜"));
   document.getElementsByTagName("body")[0].appendChild(arrowEle);
-  arrowEle.animate([{ top: (y + 70) + "px" },
-                    { top: y + "px" }],
+  arrowEle.animate([{ top: (y + 70) + "px",
+                      opacity: 0.1 },
+                    { top: y + "px",
+                      opacity: 1 }],
                    {
                      duration: 700,
                      direction: 'alternate',
@@ -269,7 +272,7 @@ function putErrorMarkerAt(textareaErrorHappened, lineAt, columnAt)
                      fill: 'forwards',
                      easing: 'ease'
                    });
-  setTimeout(function(ele) { return function() { ele.parentNode.removeChild(ele);}; }(arrowEle), 2000);
+  setTimeout(function(ele) { return function() { ele.parentNode.removeChild(ele);}; }(arrowEle), 2800);
 }
 function setTimeFields(timeFrom, timeTo)
 {
@@ -365,9 +368,12 @@ function registerCallbacks()
     curPos[0] += scrollOffset[0];
     curPos[1] += scrollOffset[1];
     var curTimeValue = mainGraticule.getTimeValueAtPoint(curPos);
-    mainGraticule.zoomTimeAndValueAtPoint(curTimeValue, scrollDirection, true, false);
-    setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 200);
-    mainGraticule.draw(false);
+    if(curTimeValue)
+    {
+      mainGraticule.zoomTimeAndValueAtPoint(curTimeValue, scrollDirection, true, false);
+      setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 200);
+      mainGraticule.draw(false);
+    }
   });
 }
 function updateAllSeriesesBands(lastUpdateTime)
