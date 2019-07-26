@@ -475,6 +475,12 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
         {
           this.ctx.fillStyle = this.bands[i].styleOptions.color;
         }
+        if(this.bands[i].styleOptions.fillPattern)
+        {
+          var img = new Image();
+          img.src = this.bands[i].styleOptions.fillPattern;
+          this.ctx.fillStyle = this.ctx.createPattern(img, "repeat");
+        }
         if(this.bands[i].styleOptions.alpha)
         {
           this.ctx.globalAlpha = this.bands[i].styleOptions.alpha;
