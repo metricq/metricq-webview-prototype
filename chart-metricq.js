@@ -669,9 +669,6 @@ function createChart()
   var pixelsLeft = 60, pixelsBottom = 30;
   wrapperEle.style.width = canvasSize[0] + pixelsLeft;
   wrapperEle.style.height = canvasSize[1] + 80;
-  var headingEle = document.createElement("div");
-  headingEle.appendChild(document.createTextNode("no metric loaded yet"));
-  headingEle.setAttribute("class", "graticule_heading");
   var canvasEle = document.createElement("canvas");
   canvasEle.width = canvasSize[0] + pixelsLeft;
   canvasEle.height = canvasSize[1] + pixelsBottom;
@@ -679,7 +676,6 @@ function createChart()
   timingsEle.setAttribute("class", "timings_text");
   timingsEle.appendChild(document.createTextNode("Zeiterfassung..."));
 
-  wrapperEle.appendChild(headingEle);
   wrapperEle.appendChild(canvasEle);
   wrapperEle.appendChild(timingsEle);
   masterWrapper.appendChild(wrapperEle);
@@ -727,9 +723,6 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
   var from = timeStart.toISOString();
   var to = timeEnd.toISOString();
   var target = metricToFetch;
-  var headingEle = document.querySelectorAll(".graticule_heading")[0];
-  headingEle.removeChild(headingEle.firstChild);
-  headingEle.appendChild(document.createTextNode(target));
 
   var curRequestId = ajaxRequestIndex ++;
   ajaxOpenRequests.push(curRequestId);
