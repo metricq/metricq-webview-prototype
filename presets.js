@@ -12,18 +12,18 @@ var metricPresets = {  
     "LZR.K21.KKR03.B08/(min|max|avg)"
   ],
   "WirkleistungLZRNutzer": [  
-    "LZR.ZIH.Racks.Wirkleistung",
-    "LZR.DLR.Racks.Wirkleistung",
-    "LZR.UKD.Racks.Wirkleistung",
-    "LZR.MPI-PKS.Racks.Wirkleistung",
-    "LZR.DFN.Racks.Wirkleistung"
+    "LZR.ZIH.Racks.Wirkleistung/(min|max|avg)",
+    "LZR.DLR.Racks.Wirkleistung/(min|max|avg)",
+    "LZR.UKD.Racks.Wirkleistung/(min|max|avg)",
+    "LZR.MPI-PKS.Racks.Wirkleistung/(min|max|avg)",
+    "LZR.DFN.Racks.Wirkleistung/(min|max|avg)"
   ],
   "WirkleistungITRaeume": [  
-    "LZR.IT.Raum-ServerDisk.Wirkleistung",
-    "LZR.IT.Raum-ZIH-HA.Wirkleistung",
-    "LZR.IT.Raum-TapeZNK.Wirkleistung",
-    "LZR.IT.Raum-MedRZ1.Wirkleistung",
-    "LZR.IT.Raum-MedRZ2.Wirkleistung"
+    "LZR.IT.Raum-ServerDisk.Wirkleistung/(min|max|avg)",
+    "LZR.IT.Raum-ZIH-HA.Wirkleistung/(min|max|avg)",
+    "LZR.IT.Raum-TapeZNK.Wirkleistung/(min|max|avg)",
+    "LZR.IT.Raum-MedRZ1.Wirkleistung/(min|max|avg)",
+    "LZR.IT.Raum-MedRZ2.Wirkleistung/(min|max|avg)"
   ],
   "ariel": [  
     "elab.ariel.s0.package.power/(min|max|avg)",

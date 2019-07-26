@@ -649,7 +649,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
             }
           }
         }
-        if(drawDots)
+        if(drawDots || 1 == this.series[i].points[j].count)
         {
           this.ctx.fillRect(x - halfPointWidth, y - halfPointWidth, pointWidth, pointWidth);
         }
@@ -937,6 +937,7 @@ function Point(paramTime, paramValue)
 {
   this.time = paramTime;
   this.value = paramValue;
+  this.count = undefined;
   this.clone = function ()
   {
     return new Point(this.time, this.value);

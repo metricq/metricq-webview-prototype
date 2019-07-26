@@ -575,21 +575,28 @@ function processMetricQData(datapointsJSON, doDraw, doResize)
   }
   timers.parsing.preprocessingEnded = (new Date()).getTime();
   var distinctMetrics = new Object();
+  var metricCountIndex = undefined;
   for(var i = 0; i < datapointsJSON.length; ++i)
   {
     var metric = datapointsJSON[i];
-    var mySeries = mainGraticule.getSeries(metric.target);
-    if(mySeries)
+    if(metric.target.match(/\/count$/))
     {
-      mySeries.clear();
-      mySeries.styleOptions = defaultSeriesStyling(metric.target);
+      metricCountIndex = i;
     } else
     {
-      mySeries = mainGraticule.addSeries(metric.target, defaultSeriesStyling(metric.target));
-    }
-    for(var j = 0; j < metric.datapoints.length; ++j)
-    {
-      mySeries.addPoint(new Point(metric.datapoints[j][1], metric.datapoints[j][0]), true);
+      var mySeries = mainGraticule.getSeries(metric.target);
+      if(mySeries)
+      {
+        mySeries.clear();
+        mySeries.styleOptions = defaultSeriesStyling(metric.target);
+      } else
+      {
+        mySeries = mainGraticule.addSeries(metric.target, defaultSeriesStyling(metric.target));
+      }
+      for(var j = 0; j < metric.datapoints.length; ++j)
+      {
+        mySeries.addPoint(new Point(metric.datapoints[j][1], metric.datapoints[j][0]), true);
+      }
     }
     var metricParts = metric.target.split("/");
     if(1 < metricParts.length)
@@ -598,7 +605,13 @@ function processMetricQData(datapointsJSON, doDraw, doResize)
       {
         distinctMetrics[metricParts[0]] = new Object();
       }
-      distinctMetrics[metricParts[0]][metricParts[1]] = mainGraticule.getSeriesIndex(metric.target);
+      if("count" == metricParts[1])
+      {
+        distinctMetrics[metricParts[0]][metricParts[1]] = true;
+      } else
+      {
+        distinctMetrics[metricParts[0]][metricParts[1]] = mainGraticule.getSeriesIndex(metric.target);
+      }
     }
   }
   for(var curMetricBase in distinctMetrics)
@@ -624,6 +637,19 @@ function processMetricQData(datapointsJSON, doDraw, doResize)
       for(var i = maxSeries.points.length - 1; i >= 0; --i)
       {
         curBand.addPoint(maxSeries.points[i].clone());
+      }
+    }
+    if(undefined !== distinctMetrics[curMetricBase].count)
+    {
+      for(var i = 0; i < mainGraticule.series.length; ++i)
+      {
+        if(mainGraticule.series[i].name.match(new RegExp("^" + curMetricBase + "/([a-zA-Z]+)")))
+        {
+          for(var j = 0; j < mainGraticule.series[i].points.length && j < datapointsJSON[metricCountIndex].datapoints.length; ++j)
+          {
+            mainGraticule.series[i].points[j].count = datapointsJSON[metricCountIndex].datapoints[j][0];
+          }
+        }
       }
     }
   }
@@ -787,6 +813,30 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
   var from = timeStart.toISOString();
   var to = timeEnd.toISOString();
   var target = metricToFetch;
+  var splittedMetric = metricToFetch.split("/");
+  var metricBase = splittedMetric[0];
+  var aggregates = new Array();
+  if(1 < splittedMetric.length)
+  {
+    if("(" == splittedMetric[1].charAt(0)
+    && ")" == splittedMetric[1].charAt(splittedMetric[1].length - 1))
+    {
+      var splittedAggregates = splittedMetric[1].substring(1, splittedMetric[1].length - 1).split("|");
+      for(var i = 0; i < splittedAggregates.length; ++i)
+      {
+        aggregates.push(splittedAggregates[i]);
+      }
+    } else
+    {
+      aggregates.push(splittedMetric[1]);
+    }
+  }
+  if(0 == aggregates.length)
+  {
+    aggregates.push("avg");
+  }
+  /* always fetch "count" metric */
+  aggregates.push("count");
 
   var curRequestId = ajaxRequestIndex ++;
   ajaxOpenRequests.push(curRequestId);
@@ -837,7 +887,20 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
   timers.ajax = {
     presend: (new Date()).getTime()
   };
-  req.send("{\n  \"range\":{  \n    \"from\":\"" + from + "\",\n    \"to\":\"" + to + "\"\n  },\n  \"intervalMs\":" + intervalMs + ",\n  \"targets\":[  \n    {  \n      \"target\":\"" + target + "\"\n    }\n  ]\n}");
+  var requestJson = {
+    "range": {
+      "from": from,
+      "to": to
+    },
+    "intervalMs": intervalMs,
+    "targets": [
+      {
+        "target_metric": metricBase,
+        "aggregates": aggregates
+      }
+    ]
+  };
+  req.send(JSON.stringify(requestJson));
 }
 function allAjaxCompletedWatchdog()
 {
