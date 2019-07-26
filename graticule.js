@@ -319,29 +319,45 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
   
   this.drawGrid = function(timeRange, valueRange, timePerPixel, valuesPerPixel)
   {
+    /* draw lines */
     this.ctx.fillStyle = "rgba(192,192,192,0.5)";
-    this.ctx.font = "14px Sans";
     var minDistanceBetweenGridLines = 110;
     var maxStepsCount = Math.floor(this.graticuleDimensions[2] / minDistanceBetweenGridLines);
     var xAxisSteps = this.figureOutTimeSteps(maxStepsCount);
+    var xPositions = new Array();
     for(var i = 0; i < xAxisSteps.length; ++i)
     {
-      var textWidth = this.ctx.measureText(xAxisSteps[i][1]).width;
       var x = Math.round(this.graticuleDimensions[0] + ((xAxisSteps[i][0] - timeRange[0]) / timePerPixel));
+      xPositions.push(x);
       this.ctx.fillRect( x, this.graticuleDimensions[1], 2, this.graticuleDimensions[3]);
-      this.ctx.fillText(xAxisSteps[i][1], x - Math.floor(textWidth / 2), this.graticuleDimensions[1] + this.graticuleDimensions[3] + this.pixelsBottom /2);
     }
 
     minDistanceBetweenGridLines = 30;
     maxStepsCount = Math.floor(this.graticuleDimensions[3] / minDistanceBetweenGridLines);
     var yAxisSteps = this.figureOutLogarithmicSteps(valueRange[0], valueRange[1], maxStepsCount);
+    var yPositions = new Array();
     for(var i = 0; i < yAxisSteps.length; ++i)
     {
       var y = Math.round(this.graticuleDimensions[3] - ((yAxisSteps[i] - valueRange[0]) / valuesPerPixel) + this.graticuleDimensions[1]);
+      yPositions.push(y);
       if(y >= this.graticuleDimensions[1])
       {
         this.ctx.fillRect( this.graticuleDimensions[0], y, this.graticuleDimensions[2], 2);
-        this.ctx.fillText(yAxisSteps[i], this.graticuleDimensions[0] - this.pixelsLeft, y + 4);
+      }
+    }
+    /* draw text */
+    this.ctx.fillStyle = "rgba(0,0,0,1)";
+    this.ctx.font = "14px Sans";
+    for(var i = 0; i < xAxisSteps.length; ++i)
+    {
+      var textWidth = this.ctx.measureText(xAxisSteps[i][1]).width;
+      this.ctx.fillText(xAxisSteps[i][1], xPositions[i] - Math.floor(textWidth / 2), this.graticuleDimensions[1] + this.graticuleDimensions[3] + this.pixelsBottom /2);
+    }
+    for(var i = 0; i < yAxisSteps.length; ++i)
+    {
+      if(yPositions[i] >= this.graticuleDimensions[1])
+      {
+        this.ctx.fillText(yAxisSteps[i], this.graticuleDimensions[0] - this.pixelsLeft, yPositions[i] + 4);
       }
     }
   };

@@ -428,9 +428,17 @@ function registerCallbacks()
       mainGraticule.draw(false);
       ctx.fillStyle = "rgba(0,0,0,0.8)";
       ctx.fillRect(curPosOnCanvas[0] - 1, mainGraticule.graticuleDimensions[1], 2, mainGraticule.graticuleDimensions[3]);
+      ctx.font = "14px Sans";
       for(var i = 0; i < mainGraticule.series.length; ++i)
       {
-        ctx.fillText((new Number(mainGraticule.series[i].getValueAtTime(curPoint[0]))).toFixed(3) + " " + mainGraticule.series[i].name, curPosOnCanvas[0] + 10, curPosOnCanvas[1] + i * 20);
+        var curTextLine = (new Number(mainGraticule.series[i].getValueAtTime(curPoint[0]))).toFixed(3) + " " + mainGraticule.series[i].name;
+        var textWidth = ctx.measureText(curTextLine).width;
+        ctx.fillStyle = determineColorForMetric(mainGraticule.series[i].name.split("/")[0]);
+        ctx.globalAlpha = 0.4;
+        ctx.fillRect(curPosOnCanvas[0] + 10, curPosOnCanvas[1] + i * 20 - 15, textWidth, 20)
+        ctx.fillStyle = "#000000";
+        ctx.globalAlpha = 1;
+        ctx.fillText(curTextLine, curPosOnCanvas[0] + 10, curPosOnCanvas[1] + i * 20);
       }
     }
   });
