@@ -87,7 +87,6 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
   };
   this.figureOutTimeSteps = function(maxStepsAllowed)
   {
-var measureStartTime = (new Date()).getTime();
     var startTime = new Date(this.curTimeRange[0]);
     var deltaTime = this.curTimeRange[1] - this.curTimeRange[0];
     var timeStretches = [
@@ -114,37 +113,107 @@ var measureStartTime = (new Date()).getTime();
     {
       i = 6;
     }
-    var curRangeMultiplier = Math.floor((deltaTime / timeStretches[i]) / maxStepsAllowed);
+    var curRangeMultiplier = (deltaTime / timeStretches[i]) / maxStepsAllowed;
+    var mostBeautifulMultipliers = [
+      [1, 5, 10, 25, 50, 75, 100], // year
+      [1, 2, 3, 4, 6, 12], // month
+      [1, 2, 7, 14, 21, 28], // day
+      [1, 2, 3, 4, 6, 8, 9, 12, 15, 18, 21, 24, 30, 36, 42, 48, 64, 60, 72, 84, 96], // hour
+      [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 75, 90, 105, 120, 150, 180, 210, 240, 270, 300], // minute
+      [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 75, 90, 105, 120, 150, 180, 210, 240, 270, 300], // second
+      [1, 25, 50, 75, 100, 125, 150, 175, 200, 250, 300, 350, 400, 450, 500, 600, 700, 750, 800, 900, 1000] // millisecond
+    ];
+    var j = 0;
+    var indexClosest = 0;
+    var deltaClosest = 99999999999;
+    for(; j < mostBeautifulMultipliers[i].length; ++j)
+    {
+      var curDelta = Math.abs(mostBeautifulMultipliers[i][j] - curRangeMultiplier);
+      if(curDelta < deltaClosest)
+      {
+        indexClosest = j;
+        deltaClosest = curDelta;
+      }
+    }
+    var moreBeautifulMultiplier = mostBeautifulMultipliers[i][indexClosest];
+    if((curRangeMultiplier * 0.50) <= moreBeautifulMultiplier
+    && (curRangeMultiplier * 1.50) >= moreBeautifulMultiplier)
+    {
+      curRangeMultiplier = moreBeautifulMultiplier;
+    } else
+    {
+      curRangeMultiplier = Math.floor(curRangeMultiplier);
+    }
     if(1 > curRangeMultiplier)
     {
       curRangeMultiplier = 1;
     }
     var stepSize = timeStretches[i] * curRangeMultiplier;
     var stepStart = undefined;
+    var fields = 
+    [
+      1970,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0
+    ]
     switch(i)
     {
       case 0:
-        stepStart = new Date(startTime.getFullYear() + "-01-01 00:00:00");
+        fields[0] = startTime.getFullYear();
         break;
       case 1:
-        stepStart = new Date(startTime.getFullYear() + "-" + (startTime.getMonth() + 1) + "-01 00:00:00");
+        fields[0] = startTime.getFullYear();
+        fields[1] = (startTime.getMonth() + 1) - ((startTime.getMonth() + 1) % curRangeMultiplier);
+        if(1 > fields[1])
+        {
+          fields[1] = 1;
+        }
         break;
       case 2:
-        stepStart = new Date(startTime.getFullYear() + "-" + (startTime.getMonth() + 1) + "-" + startTime.getDate() + " 00:00:00");
+        fields[0] = startTime.getFullYear();
+        fields[1] = startTime.getMonth() + 1;
+        fields[2] = startTime.getDate() - startTime.getDate() % curRangeMultiplier;
+        if(1 > fields[2])
+        {
+          fields[2] = 1;
+        }
         break;
       case 3:
-        stepStart = new Date(startTime.getFullYear() + "-" + (startTime.getMonth() + 1) + "-" + startTime.getDate() + " " + startTime.getHours() +":00:00");
+        fields[0] = startTime.getFullYear();
+        fields[1] = startTime.getMonth() + 1;
+        fields[2] = startTime.getDate();
+        fields[3] = startTime.getHours() - startTime.getHours() % curRangeMultiplier;
         break;
       case 4:
-        stepStart = new Date(startTime.getFullYear() + "-" + (startTime.getMonth() + 1) + "-" + startTime.getDate() + " " + startTime.getHours() +":" + startTime.getMinutes() + ":00");
+        fields[0] = startTime.getFullYear();
+        fields[1] = startTime.getMonth() + 1;
+        fields[2] = startTime.getDate();
+        fields[3] = startTime.getHours();
+        fields[4] = startTime.getMinutes() - startTime.getMinutes() % curRangeMultiplier;
         break;
       case 5:
-        stepStart = new Date(startTime.getFullYear() + "-" + (startTime.getMonth() + 1) + "-" + startTime.getDate() + " " + startTime.getHours() +":" + startTime.getMinutes() + ":" + startTime.getSeconds());
+        fields[0] = startTime.getFullYear();
+        fields[1] = startTime.getMonth() + 1;
+        fields[2] = startTime.getDate();
+        fields[3] = startTime.getHours();
+        fields[4] = startTime.getMinutes();
+        fields[5] = startTime.getSeconds() - startTime.getSeconds() % curRangeMultiplier;
         break;
       case 6:
-        stepStart = startTime;
+        fields[0] = startTime.getFullYear();
+        fields[1] = startTime.getMonth() + 1;
+        fields[2] = startTime.getDate();
+        fields[3] = startTime.getHours();
+        fields[4] = startTime.getMinutes();
+        fields[5] = startTime.getSeconds();
+        fields[6] = startTime.getMilliseconds() - startTime.getMilliseconds() % curRangeMultiplier;
         break;
     }
+    stepStart = new Date(fields[0] + "-" + (fields[1] < 10 ? "0" : "") + fields[1] + "-" + (fields[2] < 10 ? "0" : "") + fields[2] + " " + (fields[3] < 10 ? "0" : "") + fields[3] + ":" + (fields[4] < 10 ? "0" : "") + fields[4] + ":" + (fields[5] < 10 ? "0" : "") + fields[5] + "." + (fields[6] < 100 ? "00" : (fields[6] < 10 ? "0" : "")) + fields[6]);
     while(stepStart.getTime() < this.curTimeRange[0])
     {
       stepStart = new Date(stepStart.getTime() + stepSize);
@@ -195,17 +264,21 @@ var measureStartTime = (new Date()).getTime();
           outArr.push([j, (curDate.getHours() < 10 ? "0" : "") + curDate.getHours() + ":" + (curDate.getMinutes() < 10 ? "0" : "") + curDate.getMinutes() + ":" + (curDate.getSeconds() < 10 ? "0" : "") + curDate.getSeconds()]);
           break;
         case 6:
+          var msString = "" + curDate.getMilliseconds();
+          for(var k = msString.length; k < 3; ++k)
+          {
+            msString = "0" + msString;
+          }
           if(0 == curDate.getMilliseconds() || !previousCurDate)
           {
-            outArr.push([j, (curDate.getHours() < 10 ? "0" : "") + curDate.getHours() + ":" + (curDate.getMinutes() < 10 ? "0" : "") + curDate.getMinutes() + ":" + (curDate.getSeconds() < 10 ? "0" : "") + curDate.getSeconds() + "." + curDate.getMilliseconds()]);
+            outArr.push([j, (curDate.getHours() < 10 ? "0" : "") + curDate.getHours() + ":" + (curDate.getMinutes() < 10 ? "0" : "") + curDate.getMinutes() + ":" + (curDate.getSeconds() < 10 ? "0" : "") + curDate.getSeconds() + "." + msString]);
           } else
           {
-            outArr.push([j, (curDate.getSeconds() < 10 ? "0" : "") + curDate.getSeconds() + "." + curDate.getMilliseconds()]);
+            outArr.push([j, (curDate.getSeconds() < 10 ? "0" : "") + curDate.getSeconds() + "." + msString]);
           }
       }
       previousCurDate = curDate;
     }
-console.log((new Date()).getTime() - measureStartTime);
     return outArr;
   };
   this.figureOutLogarithmicSteps = function(rangeStart, rangeEnd, maxStepsAllowed)
@@ -217,9 +290,9 @@ console.log((new Date()).getTime() - measureStartTime);
     var stepSize = Math.pow(10, powerTen);
     if((deltaRange / stepSize) > maxStepsAllowed)
     {
-      if((deltaRange / (stepSize * 5)) < maxStepsAllowed)
+      if((deltaRange / (stepSize * 2)) < maxStepsAllowed)
       {
-        stepSize *= 5;
+        stepSize *= 2;
       } else if((deltaRange / (stepSize * 10)) < maxStepsAllowed)
       {
         stepSize *= 10;
@@ -230,9 +303,9 @@ console.log((new Date()).getTime() - measureStartTime);
       {
         stepSize /= 10;
       }
-      if((deltaRange / (stepSize / 5)) < maxStepsAllowed)
+      if((deltaRange / (stepSize / 2)) < maxStepsAllowed)
       {
-        stepSize /= 5;
+        stepSize /= 2;
       }
     }
     var firstStep = rangeStart + (stepSize - (rangeStart % stepSize));
