@@ -425,6 +425,10 @@ function registerCallbacks()
     {
       var curPosOnCanvas = calculateActualMousePos(evtObj);
       var curPoint = mainGraticule.getTimeValueAtPoint(curPosOnCanvas);
+      if(!curPoint)
+      {
+        return;
+      }
       mainGraticule.draw(false);
       ctx.fillStyle = "rgba(0,0,0,0.8)";
       ctx.fillRect(curPosOnCanvas[0] - 1, mainGraticule.graticuleDimensions[1], 2, mainGraticule.graticuleDimensions[3]);
@@ -567,7 +571,7 @@ function processMetricQData(datapointsJSON, doDraw, doResize)
   console.log(datapointsJSON);
   if(! mainGraticule)
   {
-    mainGraticule = new Graticule(ctx, [canvasSpaceLeftTop[0], canvasSpaceLeftTop[1], canvasDimensions[0] - canvasSpaceLeftTop[0], canvasDimensions[1] - canvasSpaceLeftTop[1]], canvasSpaceLeftTop[0], canvasSpaceLeftTop[1]);
+    mainGraticule = new Graticule(ctx, [canvasSpaceLeftTop[0], canvasSpaceLeftTop[1], canvasDimensions[0] - canvasSpaceLeftTop[0], canvasDimensions[1] - canvasSpaceLeftTop[1]], canvasSpaceLeftTop[0], canvasSpaceLeftTop[1], [canvasDimensions[0] + canvasSpaceLeftTop[0], canvasDimensions[1] + canvasSpaceLeftTop[1]]);
   }
   timers.parsing.preprocessingEnded = (new Date()).getTime();
   var distinctMetrics = new Object();
@@ -724,12 +728,11 @@ function createChart()
   wrapperEle.style.float = "left";
   wrapperEle.style.marginRight = 10;
   var canvasSize = canvasDimensions;
-  var pixelsLeft = 60, pixelsBottom = 30;
-  wrapperEle.style.width = canvasSize[0] + pixelsLeft;
-  wrapperEle.style.height = canvasSize[1] + 80;
+  wrapperEle.style.width = canvasSize[0] + canvasSpaceLeftTop[0];
+  wrapperEle.style.height = canvasSize[1] + canvasSpaceLeftTop[1];
   var canvasEle = document.createElement("canvas");
-  canvasEle.width = canvasSize[0] + pixelsLeft;
-  canvasEle.height = canvasSize[1] + pixelsBottom;
+  canvasEle.width = canvasSize[0] + canvasSpaceLeftTop[0];
+  canvasEle.height = canvasSize[1] + canvasSpaceLeftTop[1];
   var timingsEle = document.createElement("div");
   timingsEle.setAttribute("class", "timings_text");
   timingsEle.appendChild(document.createTextNode("Zeiterfassung..."));

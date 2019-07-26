@@ -1,4 +1,4 @@
-function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
+function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, paramClearSize)
 {
   this.ctx = ctx;
   this.graticuleDimensions = offsetDimension;
@@ -8,6 +8,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
   this.curValuesPerPixel = undefined;
   this.pixelsLeft = paramPixelsLeft;
   this.pixelsBottom = paramPixelsBottom;
+  this.clearSize = paramClearSize;
   this.series = new Array();
   this.bands = new Array();
   this.lastRangeChangeTime = 0;
@@ -442,8 +443,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom)
     {
       console.log("Cowardly refusing to do draw() when I am not allowed to determine Time and Value Ranges");
     }
-    this.ctx.clearRect(this.graticuleDimensions[0] - this.pixelsLeft, this.graticuleDimensions[1],
-                  this.graticuleDimensions[2] + this.pixelsLeft, this.graticuleDimensions[3] + this.pixelsBottom);
+    this.ctx.clearRect(0, 0, this.clearSize[0], this.clearSize[1]);
     this.drawGrid(this.curTimeRange, this.curValueRange, this.curTimePerPixel, this.curValuesPerPixel);
     this.ctx.save();
     this.ctx.beginPath();
