@@ -775,6 +775,78 @@ function Series(paramName, paramStyleOptions)
     delete this.points;
     this.points = new Array();
   };
+  this.getValueAtTime = function(timeAt)
+  {
+    if("number" !== typeof timeAt || 0 == this.points.length)
+    {
+      return;
+    }
+    var middleIndex = undefined;
+    var bottomIndex = 0
+    var headIndex   = this.points.length - 1;
+    while(10 < (headIndex - bottomIndex))
+    {
+      middleIndex = bottomIndex + Math.floor((headIndex - bottomIndex) / 2);
+      if(this.points[middleIndex].time < timeAt)
+      {
+        bottomIndex = middleIndex;
+      } else
+      {
+        headIndex = middleIndex;
+      }
+    }
+    var i = bottomIndex;
+    var closestIndex = bottomIndex;
+    var closestDelta = 99999999999999;
+    for(; i <= headIndex; ++i)
+    {
+      var curDelta = Math.abs(this.points[i].time - timeAt);
+      if(curDelta < closestDelta)
+      {
+        closestDelta = curDelta;
+        closestIndex = i;
+      }
+    }
+    var closestPointIndex = closestIndex;
+    if(this.points[closestPointIndex].time !== timeAt
+    && this.styleOptions && this.styleOptions.connect && "none" != this.styleOptions.connect)
+    {
+      var betterIndex = closestPointIndex;
+      if("next" == this.styleOptions.connect)
+      {
+        --betterIndex;
+      } else if ("last" == this.styleOptions.connect)
+      {
+        ++betterIndex;
+      } else if("direct" == this.styleOptions.connect)
+      {
+        var firstPoint, secondPoint;
+        if(timeAt < this.points[betterIndex].time && 0 > betterIndex)
+        {
+          firstPoint = this.points[betterIndex - 1];
+          secondPoint = this.points[betterIndex];
+        } else
+        {
+          firstPoint = this.points[betterIndex];
+          secondPoint = this.point[betterIndex + 1]
+        }
+        var timeDelta = secondPoint.time - firstPoint.time;
+        var valueDelta = secondPoint.value - firstPoint.value;
+        return firstPoint.value + valueDelta * ((timeAt - firstPoint.time) / timeDelta);
+      }
+      if(0 > betterIndex)
+      {
+        betterIndex = 0;
+      } else if(betterIndex >= this.points.length)
+      {
+        betterIndex = this.points.length - 1;
+      }
+      return this.points[betterIndex].value;
+    } else
+    {
+      return this.points[closestPointIndex].value;
+    }
+  };
   this.addPoint = function (newPoint, isBigger) {
     if(isBigger || 0 == this.points.length)
     {

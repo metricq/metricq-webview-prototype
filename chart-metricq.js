@@ -381,7 +381,20 @@ function registerCallbacks()
       mainGraticule.setTimeRange([posStart[0], posEnd[0]]);
       setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 200);
       mainGraticule.draw(false);
-
+    }
+  });
+  mouseDown.registerMoveCallback(function(evtObj) {
+    if(keyDown.is(17) && mainGraticule && "CANVAS" === evtObj.target.tagName)
+    {
+      var curPosOnCanvas = calculateActualMousePos(evtObj);
+      var curPoint = mainGraticule.getTimeValueAtPoint(curPosOnCanvas);
+      mainGraticule.draw(false);
+      ctx.fillStyle = "rgba(0,0,0,0.8)";
+      ctx.fillRect(curPosOnCanvas[0] - 1, mainGraticule.graticuleDimensions[1], 2, mainGraticule.graticuleDimensions[3]);
+      for(var i = 0; i < mainGraticule.series.length; ++i)
+      {
+        ctx.fillText((new Number(mainGraticule.series[i].getValueAtTime(curPoint[0]))).toFixed(3) + " " + mainGraticule.series[i].name, curPosOnCanvas[0] + 10, curPosOnCanvas[1] + i * 20);
+      }
     }
   });
   document.getElementsByTagName("canvas")[0].addEventListener("wheel", function(evtObj) {
@@ -816,6 +829,7 @@ var mouseDown = {
   endTarget: undefined,
   dragCallbacks: new Array(),
   dropCallbacks: new Array(),
+  moveCallbacks: new Array(),
   calcRelativePos: function(evtObj)
   {
     var curPos = [
@@ -857,6 +871,12 @@ var mouseDown = {
       {
         mouseDown.dragCallbacks[i](evtObj);
       }
+    } else
+    {
+      for(var i = 0; i < mouseDown.moveCallbacks.length; ++i)
+      {
+        mouseDown.moveCallbacks[i](evtObj);
+      }
     }
   },
   endClick: function(evtObj)
@@ -878,6 +898,10 @@ var mouseDown = {
   registerDropCallback: function(callbackFunc)
   {
     mouseDown.dropCallbacks.push(callbackFunc);
+  },
+  registerMoveCallback: function(callbackFunc)
+  {
+    mouseDown.moveCallbacks.push(callbackFunc);
   }
 }
 var keyDown = {
