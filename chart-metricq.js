@@ -46,13 +46,42 @@ var stylingTabs = undefined;
 function init()
 {
   setTimeFields(new Date((new Date()).getTime() - 7200000), new Date());
-  initializePlusButton();
   initializeStyleOptions();
   masterWrapper = document.querySelector(".master_wrapper");
   ctx = createChart();
   registerCallbacks();
+  initializeMetricNames();
 }
-
+function initializeMetricNames()
+{
+  var presetsEle = document.getElementById("metric_preset_selection");
+  for(var curPreset in metricPresets)
+  {
+    var curOption = document.createElement("option");
+    curOption.value = curPreset;
+    curOption.appendChild(document.createTextNode(curPreset));
+    presetsEle.appendChild(curOption);
+  }
+  presetsEle.addEventListener("change", function(evtObj) {
+    var curPreset = evtObj.target.value;
+    removeAllChilds(document.querySelector(".metric_names"));
+    for(var i = 0; i < metricPresets[curPreset].length; ++i)
+    {
+      addMetricNameField(metricPresets[curPreset][i]);
+    }
+    initializePlusButton();
+  });
+  var wrapperEle = document.querySelector(".metric_names");
+  addMetricNameField();
+  initializePlusButton();
+}
+function removeAllChilds(parentEle)
+{
+  for(var i = parentEle.childNodes.length - 1; i >= 0; --i)
+  {
+    parentEle.removeChild(parentEle.childNodes[i]);
+  }
+}
 function initializeStyleOptions()
 {
   stylingTabs = new Tabbing(document.querySelector(".style_options_wrapper"));
@@ -295,41 +324,49 @@ function initializePlusButton()
   var plusButtonEle = document.createElement("button");
   plusButtonEle.appendChild(document.createTextNode("+"));
   plusButtonEle.setAttribute("class", "plus_button");
-  plusButtonEle.addEventListener("click", function() {
-    var i;
-    var previousElement = undefined;
-    var lastElement = undefined;
-    for(i = 0; ; ++i)
-    {
-      previousElement = lastElement;
-      lastElement = document.getElementById("metric_name[" + i + "]")
-      if( ! lastElement)
-      {
-        break;
-      }
-    }
-    var metricNamesEle = document.querySelector(".metric_names");
-    var plusButtonEle = document.querySelector(".plus_button");
-    var fieldDescriptionEle = document.createElement("div");
-    fieldDescriptionEle.setAttribute("class", "field_description");
-    var labelEle = document.createElement("label");
-    labelEle.setAttribute("for", "metric_name[" + i + "]");
-    labelEle.appendChild(document.createTextNode("Metrik Name (" + (i + 1) + ")"));
-    fieldDescriptionEle.appendChild(labelEle);
-    metricNamesEle.insertBefore(fieldDescriptionEle, plusButtonEle);
-
-    var fieldInputsEle = document.createElement("div");
-    fieldInputsEle.setAttribute("class", "field_inputs");
-    var inputEle = document.createElement("input");
-    inputEle.setAttribute("type", "text");
-    inputEle.setAttribute("name", "metric_name[" + i + "]");
-    inputEle.setAttribute("size", "60");
-    inputEle.setAttribute("value", previousElement.value);
-    inputEle.setAttribute("id", "metric_name[" + i + "]");
-    fieldInputsEle.appendChild(inputEle);
-    metricNamesEle.insertBefore(fieldInputsEle, plusButtonEle);
-  });
+  plusButtonEle.addEventListener("click", addMetricNameField);
   metricNamesEle.appendChild(plusButtonEle);
+}
+function addMetricNameField(predefinedValue)
+{
+  var i;
+  var lastElement = undefined;
+  var previousElement = undefined;
+  for(i = 0; ; ++i)
+  {
+    previousElement = lastElement;
+    lastElement = document.getElementById("metric_name[" + i + "]")
+    if( ! lastElement)
+    {
+      break;
+    }
+  }
+  var metricNamesEle = document.querySelector(".metric_names");
+  var plusButtonEle = document.querySelector(".plus_button");
+  var fieldDescriptionEle = document.createElement("div");
+  fieldDescriptionEle.setAttribute("class", "field_description");
+  var labelEle = document.createElement("label");
+  labelEle.setAttribute("for", "metric_name[" + i + "]");
+  labelEle.appendChild(document.createTextNode("Metrik Name (" + (i + 1) + ")"));
+  fieldDescriptionEle.appendChild(labelEle);
+  metricNamesEle.insertBefore(fieldDescriptionEle, plusButtonEle);
+
+  var fieldInputsEle = document.createElement("div");
+  fieldInputsEle.setAttribute("class", "field_inputs");
+  var inputEle = document.createElement("input");
+  inputEle.setAttribute("type", "text");
+  inputEle.setAttribute("name", "metric_name[" + i + "]");
+  inputEle.setAttribute("size", "60");
+  if(predefinedValue)
+  {
+    inputEle.setAttribute("value", predefinedValue);
+  } else if(previousElement)
+  {
+    inputEle.setAttribute("value", previousElement.value);
+  }
+  inputEle.setAttribute("id", "metric_name[" + i + "]");
+  fieldInputsEle.appendChild(inputEle);
+  metricNamesEle.insertBefore(fieldInputsEle, plusButtonEle);
 }
 function registerCallbacks()
 {
@@ -715,9 +752,12 @@ function submitMetricName()
     var curMetricNameEles = document.getElementsByName("metric_name[" + i + "]");
     if(0 < curMetricNameEles.length)
     {
-      curMetricNameEles[0].parentNode.style.backgroundColor = determineColorForMetric(curMetricNameEles[0].value.split("/")[0]);
-      curMetricNameEles[0].style.backgroundColor = "inherit";
-      fetchMeasureData(metricFrom, metricTo, intervalMs, curMetricNameEles[0].value, function(jsonObj) { processMetricQData(jsonObj, false, false); });
+      if(0 < curMetricNameEles[0].value.length)
+      {
+        curMetricNameEles[0].parentNode.style.backgroundColor = determineColorForMetric(curMetricNameEles[0].value.split("/")[0]);
+        curMetricNameEles[0].style.backgroundColor = "inherit";
+        fetchMeasureData(metricFrom, metricTo, intervalMs, curMetricNameEles[0].value, function(jsonObj) { processMetricQData(jsonObj, false, false); });
+      }
     } else
     {
       break;
