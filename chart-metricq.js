@@ -810,6 +810,10 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
     alert("only fetching with timeStart < timeEnd allowed!");
     return;
   }
+  // Fetch some data outside for smooth scrolling
+  var timeDelta = timeEnd - timeStart;
+  timeStart = new Date(timeStart.getTime() - timeDelta);
+  timeEnd = new Date(timeEnd.getTime() + timeDelta);
   var from = timeStart.toISOString();
   var to = timeEnd.toISOString();
   var target = metricToFetch;
