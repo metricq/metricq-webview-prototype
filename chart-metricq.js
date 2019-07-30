@@ -733,11 +733,18 @@ function showTimers()
   deltaTime = timers.ajax.done - timers.ajax.presend;
   timingsString += "Ajax " + deltaTime + " ms";
 
+  if(timers.endpoint)
+  {
+    deltaTime = timers.endpoint.duration;
+    deltaTime = Math.round(deltaTime * 100) / 100;
+    timingsString += ", Endpoint " + deltaTime + " ms";
+  }
+
   if(timers.db_http)
   {
     deltaTime = timers.db_http.duration;
     deltaTime = Math.round(deltaTime * 100) / 100;
-    timingsString += ", Endpoint " + deltaTime + " ms";
+    timingsString += ", Fetch " + deltaTime + " ms";
   }
 
   if(timers.db)
@@ -868,6 +875,12 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
       timers.parsing = {
         start: (new Date()).getTime()
       };
+      timers.endpoint = { duration: 0};
+      let requestDuration = obj.target.getResponseHeader("x-request-duration");
+      if (requestDuration !== null)
+      {
+        timers.endpoint.duration = Number.parseFloat(requestDuration) * 1000;
+      }
       try
       {
         jsonObj = JSON.parse(obj.target.responseText);
