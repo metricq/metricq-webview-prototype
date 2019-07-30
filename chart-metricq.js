@@ -732,6 +732,14 @@ function showTimers()
   var timingsString = "";
   deltaTime = timers.ajax.done - timers.ajax.presend;
   timingsString += "Ajax " + deltaTime + " ms";
+
+  if(timers.db_http)
+  {
+    deltaTime = timers.db_http.duration;
+    deltaTime = Math.round(deltaTime * 100) / 100;
+    timingsString += ", Endpoint " + deltaTime + " ms";
+  }
+
   if(timers.db)
   {
     deltaTime = timers.db.duration;
@@ -867,6 +875,11 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
         {
           timers.db = { duration: 0 };
           timers.db.duration = jsonObj[0].time_measurements.db * 1000;
+        }
+        if(jsonObj && jsonObj[0].time_measurements.http)
+        {
+          timers.db_http = { duration: 0 };
+          timers.db_http.duration = jsonObj[0].time_measurements.http * 1000;
         }
       } catch(exc)
       {
