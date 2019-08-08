@@ -557,12 +557,7 @@ function updateAllSeriesesBands(lastUpdateTime)
     {
       extensionArr.push(curExtension);
     }
-    var requestMetric = curMetricBase;
-    if(0 < extensionArr.length)
-    {
-      requestMetric += "/(" + extensionArr.join("|") + ")";
-    }
-    fetchMeasureData(metricFrom, metricTo, calcIntervalMs(metricFrom, metricTo), requestMetric, function(jsonObj) { processMetricQData(jsonObj, false, false); });
+    fetchMeasureData(metricFrom, metricTo, calcIntervalMs(metricFrom, metricTo), curMetricBase, function(jsonObj) { processMetricQData(jsonObj, false, false); });
   }
   setTimeout(allAjaxCompletedWatchdog, 30);
 }
