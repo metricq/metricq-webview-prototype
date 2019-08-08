@@ -36,7 +36,7 @@ var stylingOptions = {
     {
       nameRegex: "band:.*",
       title: "All Bands",
-      connect: "last", 
+      connect: "last",
       color: "default",
       alpha: 0.3
     }
@@ -794,7 +794,7 @@ function submitMetricName()
   {
     mainGraticule.resetData();
   }
-  var metricFrom = new Date(document.getElementsByName("metric_from_date")[0].value + " " + 
+  var metricFrom = new Date(document.getElementsByName("metric_from_date")[0].value + " " +
                             document.getElementsByName("metric_from_time")[0].value);
   var metricTo   = new Date(document.getElementsByName("metric_to_date"  )[0].value + " " +
                             document.getElementsByName("metric_to_time"  )[0].value);
@@ -831,31 +831,12 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
   timeEnd = new Date(timeEnd.getTime() + timeDelta);
   var from = timeStart.toISOString();
   var to = timeEnd.toISOString();
-  var target = metricToFetch;
-  var splittedMetric = metricToFetch.split("/");
-  var metricBase = splittedMetric[0];
-  var aggregates = new Array();
-  if(1 < splittedMetric.length)
-  {
-    if("(" == splittedMetric[1].charAt(0)
-    && ")" == splittedMetric[1].charAt(splittedMetric[1].length - 1))
-    {
-      var splittedAggregates = splittedMetric[1].substring(1, splittedMetric[1].length - 1).split("|");
-      for(var i = 0; i < splittedAggregates.length; ++i)
-      {
-        aggregates.push(splittedAggregates[i]);
-      }
-    } else
-    {
-      aggregates.push(splittedMetric[1]);
-    }
-  }
-  if(0 == aggregates.length)
-  {
-    aggregates.push("avg");
-  }
-  /* always fetch "count" metric */
-  aggregates.push("count");
+  var functions = [
+    "min",
+    "max",
+    "avg",
+    "count"
+  ];
 
   var curRequestId = ajaxRequestIndex ++;
   ajaxOpenRequests.push(curRequestId);
@@ -925,8 +906,8 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
     "intervalMs": intervalMs,
     "targets": [
       {
-        "target_metric": metricBase,
-        "aggregates": aggregates
+        "metric": metricToFetch,
+        "functions": functions
       }
     ]
   };
