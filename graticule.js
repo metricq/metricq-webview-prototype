@@ -243,7 +243,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
             outArr.push([ j, monthNames[curDate.getMonth()]]);
           }
           stepSize = 0;
-          j = (new Date((curDate.getFullYear() + Math.floor((curDate.getMonth() + 1) / 12)) + "-" + ((curDate.getMonth() + 1) % 12 + 1) + "-01")).getTime();
+          j = (new Date((curDate.getFullYear() + Math.floor((curDate.getMonth() + moreBeautifulMultiplier) / 12)) + "-" + ((curDate.getMonth() + moreBeautifulMultiplier) % 12 + 1) + "-01")).getTime();
           break;
         case 2:
           if(1 == curDate.getDate() || !previousCurDate || previousCurDate.getMonth() != curDate.getMonth())
