@@ -398,7 +398,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
     var zoomFactor = 1 + zoomDirection;
     var newTimeDelta  = (this.curTimeRange[1] - this.curTimeRange[0]  ) * zoomFactor;
     var newValueDelta = (this.curValueRange[1] - this.curValueRange[0]) * zoomFactor;
-    if(zoomTime)
+    if(zoomTime && newTimeDelta > 50)
     {
       var relationalPositionOfPoint = (pointAt[0] - this.curTimeRange[0]) / (this.curTimeRange[1] - this.curTimeRange[0]);
       this.setTimeRange([ pointAt[0] - (newTimeDelta * relationalPositionOfPoint),

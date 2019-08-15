@@ -487,6 +487,10 @@ function registerCallbacks()
       }
     }
   });
+  document.getElementsByName("metric_to_date")[0].addEventListener("change",function(evt){
+    var fromEle = document.getElementsByName("metric_from_date")[0];
+    fromEle.setAttribute("max", evt.target.value);
+  });
 }
 function calculateActualMousePos(evtObj)
 {
@@ -780,7 +784,8 @@ function createChart()
 }
 function calcIntervalMs(metricFrom, metricTo)
 {
-  var countOfDataPoints = (canvasDimensions[0] - canvasSpaceLeftTop[0]) / parseFloat(document.getElementsByName("metric_request_every_that_many_pixels")[0].value);
+  var xPixelRequest = parseFloat(document.getElementsByName("metric_request_every_that_many_pixels")[0].value);
+  var countOfDataPoints = (canvasDimensions[0] - canvasSpaceLeftTop[0]) / xPixelRequest;
   return Math.floor((metricTo.getTime() - metricFrom.getTime()) / countOfDataPoints);
 }
 function submitMetricName()
