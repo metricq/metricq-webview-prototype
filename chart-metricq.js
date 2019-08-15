@@ -84,7 +84,7 @@ function removeAllChilds(parentEle)
 }
 function initializeStyleOptions()
 {
-  stylingTabs = new Tabbing(document.querySelector(".style_options_wrapper"));
+  stylingTabs = new Tabbing(document.querySelector(".style_options_wrapper"), ["50em", "14em"]);
   var curTab, textareaEle;
   for(var i = 0; i < stylingOptions.list.length; ++i)
   {
