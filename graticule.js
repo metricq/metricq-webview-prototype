@@ -215,9 +215,12 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
         break;
     }
     stepStart = new Date(fields[0] + "-" + (fields[1] < 10 ? "0" : "") + fields[1] + "-" + (fields[2] < 10 ? "0" : "") + fields[2] + " " + (fields[3] < 10 ? "0" : "") + fields[3] + ":" + (fields[4] < 10 ? "0" : "") + fields[4] + ":" + (fields[5] < 10 ? "0" : "") + fields[5] + "." + (fields[6] < 100 ? "00" : (fields[6] < 10 ? "0" : "")) + fields[6]);
-    while(stepStart.getTime() < this.curTimeRange[0])
+    if(1 != i)
     {
-      stepStart = new Date(stepStart.getTime() + stepSize);
+      while(stepStart.getTime() < this.curTimeRange[0])
+      {
+        stepStart = new Date(stepStart.getTime() + stepSize);
+      }
     }
     var outArr = new Array();
     var monthNames = ["January", "February", "March", "April", "May", "June",
@@ -232,18 +235,20 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
           outArr.push([ j, "" + curDate.getFullYear()]);
           break;
         case 1:
-          if(0 == curDate.getMonth() || !previousCurDate)
+          if(0 == curDate.getMonth() || !previousCurDate || previousCurDate.getFullYear() != curDate.getFullYear())
           {
             outArr.push([ j, monthNames[curDate.getMonth()] + " " + curDate.getFullYear()]);
           } else
           {
             outArr.push([ j, monthNames[curDate.getMonth()]]);
           }
+          stepSize = 0;
+          j = (new Date((curDate.getFullYear() + Math.floor((curDate.getMonth() + 1) / 12)) + "-" + ((curDate.getMonth() + 1) % 12 + 1) + "-01")).getTime();
           break;
         case 2:
-          if(1 == curDate.getDate() || !previousCurDate)
+          if(1 == curDate.getDate() || !previousCurDate || previousCurDate.getMonth() != curDate.getMonth())
           {
-            outArr.push([j, curDate.getDate() + " " + monthNames[curDate.getMonth()]]);
+            outArr.push([j, monthNames[curDate.getMonth()] + " " + curDate.getDate()]);
           } else
           {
             outArr.push([j, "" + curDate.getDate()]);
