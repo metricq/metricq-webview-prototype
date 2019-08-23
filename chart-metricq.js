@@ -378,6 +378,11 @@ function registerCallbacks()
       {
         if(keyDown.is(16))
         {
+          mainGraticule.moveTimeAndValueRanges( (mouseDown.currentPos[0] - mouseDown.previousPos[0]) * -1 * mainGraticule.curTimePerPixel, 0);
+          setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 150);
+          mainGraticule.draw(false);
+        } else
+        {
           mainGraticule.draw(false);
           ctx.fillStyle = "rgba(0,0,0,0.2)";
           var minXPos = mouseDown.currentPos[0];
@@ -391,17 +396,12 @@ function registerCallbacks()
             maxXPos = mouseDown.startPos[0];
           }
           ctx.fillRect(minXPos, mainGraticule.graticuleDimensions[1], maxXPos - minXPos, mainGraticule.graticuleDimensions[3]);
-        } else
-        {
-          mainGraticule.moveTimeAndValueRanges( (mouseDown.currentPos[0] - mouseDown.previousPos[0]) * -1 * mainGraticule.curTimePerPixel, 0);
-          setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 150);
-          mainGraticule.draw(false);
         }
       }
     }
   });
   mouseDown.registerDropCallback(function(evtObj) {
-    if(keyDown.is(16) && mainGraticule && mouseDown.startTarget && "CANVAS" === mouseDown.startTarget.tagName)
+    if(!keyDown.is(16) && mainGraticule && mouseDown.startTarget && "CANVAS" === mouseDown.startTarget.tagName)
     {
       var posEnd   = mainGraticule.getTimeValueAtPoint( mouseDown.relativeStartPos );
       var posStart = mainGraticule.getTimeValueAtPoint( calculateActualMousePos(evtObj));
@@ -421,7 +421,7 @@ function registerCallbacks()
     }
   });
   mouseDown.registerMoveCallback(function(evtObj) {
-    if(keyDown.is(17) && mainGraticule && "CANVAS" === evtObj.target.tagName)
+    if(mainGraticule && "CANVAS" === evtObj.target.tagName)
     {
       var curPosOnCanvas = calculateActualMousePos(evtObj);
       var curPoint = mainGraticule.getTimeValueAtPoint(curPosOnCanvas);
@@ -444,6 +444,12 @@ function registerCallbacks()
         ctx.globalAlpha = 1;
         ctx.fillText(curTextLine, curPosOnCanvas[0] + 10, curPosOnCanvas[1] + i * 20);
       }
+    }
+  });
+  document.getElementsByTagName("canvas")[0].addEventListener("mouseout", function(evtObj) {
+    if(mainGraticule)
+    {
+      mainGraticule.draw(false);
     }
   });
   document.getElementsByTagName("canvas")[0].addEventListener("wheel", function(evtObj) {
