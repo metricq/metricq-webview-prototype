@@ -395,8 +395,16 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
   };
   this.setTimeRange = function (newTimeRange)
   {
+    if((newTimeRange[1] - newTimeRange[0]) < 1000)
+    {
+      var oldDelta = newTimeRange[1] - newTimeRange[0];
+      var newDelta = 1000;
+      newTimeRange[0] -= Math.round((newDelta - oldDelta) / 2.00);
+      newTimeRange[1] += Math.round((newDelta - oldDelta) / 2.00);
+    }
     this.curTimeRange = [newTimeRange[0], newTimeRange[1]];
     this.curTimePerPixel = (this.curTimeRange[1] - this.curTimeRange[0]) / this.graticuleDimensions[2];
+    this.lastRangeChangeTime = (new Date()).getTime();
   };
   this.zoomTimeAndValueAtPoint = function(pointAt, zoomDirection, zoomTime, zoomValue)
   {

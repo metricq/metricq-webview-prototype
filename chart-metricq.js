@@ -8,6 +8,9 @@ var timers = new Object();
 var ajaxOpenRequests = new Array();
 var ajaxRequestIndex = 1;
 var lastStylingChangeTime = 0;
+var uiOptions = {
+  horizontalScrolling: false
+};
 var stylingOptions = {
   list: [
     {
@@ -41,7 +44,7 @@ var stylingOptions = {
       alpha: 0.3
     }
   ]
-}
+};
 var stylingTabs = undefined;
 function init()
 {
@@ -417,6 +420,7 @@ function registerCallbacks()
       }
       mainGraticule.setTimeRange([posStart[0], posEnd[0]]);
       setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 200);
+      mainGraticule.automaticallyDetermineRanges(false, true);
       mainGraticule.draw(false);
     }
   });
@@ -458,7 +462,7 @@ function registerCallbacks()
       return;
     }
     evtObj.preventDefault();
-    if(evtObj.deltaX) // horizontal scrolling
+    if(evtObj.deltaX && uiOptions.horizontalScrolling) // horizontal scrolling
     {
       var deltaRange = mainGraticule.curTimeRange[1] - mainGraticule.curTimeRange[0];
       if(0 > evtObj.deltaX)
@@ -473,15 +477,13 @@ function registerCallbacks()
     } else // vertical scrolling
     {
       var scrollDirection = evtObj.deltaY;
-      /* scale scrollDirection */
-      /* if firefox */
-      if(-1 < navigator.userAgent.indexOf("Firefox"))
+      if(0 > scrollDirection)
       {
-        scrollDirection /= 15.00;
-      /* if chrome */
-      } else if(-1 < navigator.userAgent.indexOf("Chrome"))
+        scrollDirection = - 0.2;
+      }
+      if(0 < scrollDirection)
       {
-        scrollDirection /= 265.00;
+        scrollDirection = 0.2;
       }
       var curPos = calculateActualMousePos(evtObj);
       var curTimeValue = mainGraticule.getTimeValueAtPoint(curPos);
@@ -489,6 +491,7 @@ function registerCallbacks()
       {
         mainGraticule.zoomTimeAndValueAtPoint(curTimeValue, scrollDirection, true, false);
         setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 150);
+        mainGraticule.automaticallyDetermineRanges(false, true);
         mainGraticule.draw(false);
       }
     }
