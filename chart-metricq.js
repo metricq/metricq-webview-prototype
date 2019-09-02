@@ -419,8 +419,8 @@ function registerCallbacks()
         posStart = swap;
       }
       mainGraticule.setTimeRange([posStart[0], posEnd[0]]);
-      setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 200);
       mainGraticule.automaticallyDetermineRanges(false, true);
+      setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 200);
       mainGraticule.draw(false);
     }
   });
@@ -506,8 +506,8 @@ function registerCallbacks()
       if(curTimeValue)
       {
         mainGraticule.zoomTimeAndValueAtPoint(curTimeValue, scrollDirection, true, false);
-        setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 150);
         mainGraticule.automaticallyDetermineRanges(false, true);
+        setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 150);
         mainGraticule.draw(false);
       }
     }
