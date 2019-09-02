@@ -91,6 +91,10 @@ function removeAllChilds(parentEle)
 }
 function initializeStyleOptions()
 {
+  if(localStorage.getItem("styling"))
+  {
+    stylingOptions.list = JSON.parse(localStorage.getItem("styling"));
+  }
   stylingTabs = new Tabbing(document.querySelector(".style_options_wrapper"), ["50em", "14em"]);
   var curTab, textareaEle;
   for(var i = 0; i < stylingOptions.list.length; ++i)
@@ -115,12 +119,19 @@ function initializeStyleOptions()
   textareaEle.setAttribute("rows", "13");
   textareaEle.setAttribute("cols", "80");
   textareaEle.setAttribute("id", "style_options_color_choosing");
-  var functionSourceFull = determineColorForMetric.toString();
-  var functionSourceSplitted = functionSourceFull.split("\n");
-  var functionSourceShortened = "";
-  for(var i = 2; i < functionSourceSplitted.length - 1; ++i)
+  var functionSourceShortened = localStorage.getItem("colorFunction");
+  if(functionSourceShortened)
   {
-    functionSourceShortened += functionSourceSplitted[i].replace(/^ +/,"") + "\n";
+    determineColorForMetric = new Function("metricBaseName", functionSourceShortened);
+  } else
+  {
+    var functionSourceFull = determineColorForMetric.toString();
+    var functionSourceSplitted = functionSourceFull.split("\n");
+    functionSourceShortened = "";
+    for(var i = 2; i < functionSourceSplitted.length - 1; ++i)
+    {
+      functionSourceShortened += functionSourceSplitted[i].replace(/^ +/,"") + "\n";
+    }
   }
   textareaEle.value = functionSourceShortened;
   textareaEle.addEventListener("keyup", stylingHasChanged);
@@ -203,6 +214,11 @@ function repeatString(baseStr, repetitions)
   }
   return outStr;
 }
+function storeStylingsInLocalStorage()
+{
+  localStorage.setItem("styling", JSON.stringify(stylingOptions.list));
+  localStorage.setItem("colorFunction", colorFunctionTextarea.value);
+}
 // another watchdog like behaving self calling function using setTimeout()
 function stylingHasChanged(evtObj)
 {
@@ -225,6 +241,7 @@ function stylingHasChanged(evtObj)
       }
       lastParsedTextarea = document.getElementById("style_options_color_choosing");
       determineColorForMetric = new Function("metricBaseName", lastParsedTextarea.value);
+      storeStylingsInLocalStorage();
       if(mainGraticule)
       {
         for(var i = 0; i < mainGraticule.series.length; ++i)
