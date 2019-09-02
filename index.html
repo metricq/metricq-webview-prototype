@@ -8,6 +8,7 @@
 <script src="color-conversion.js"></script>
 <script src="tabbing.js"></script>
 <script src="presets.js"></script>
+<script src="jsurl.js"></script>
 <style type="text/css">
 .graticule_heading {
   text-align: center;
@@ -53,6 +54,8 @@
 <body>
 <h1>Metricq-webview-prototype</h1>
 <div class="metric_specification">
+  <div class="field_description"><label for="metric_import">Importieren</label></div>
+  <div class="field_inputs"><input type="text" name="metric_import" size="50" /><button onclick="urlImport()">Import</button></div>
   <div class="field_description"><label for="metric_from_time">Zeit beginn</label></div>
   <div class="field_inputs"><input type="date" name="metric_from_date" /><input type="time" step="any" name="metric_from_time" id="metric_from_time" /></div>
   <div class="field_description"><label for="metric_to_time">Zeit ende</label></div>

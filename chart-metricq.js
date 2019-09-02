@@ -813,6 +813,66 @@ function calcIntervalMs(metricFrom, metricTo)
   var countOfDataPoints = (canvasDimensions[0] - canvasSpaceLeftTop[0]) / xPixelRequest;
   return Math.floor((metricTo.getTime() - metricFrom.getTime()) / countOfDataPoints);
 }
+function urlImport()
+{
+  var urlToImport = document.getElementsByName("metric_import")[0].value;
+  var hashPos = urlToImport.indexOf("#/");
+  if(-1 == hashPos)
+  {
+    alert("No Hash sequence (\"#/\") found in given URL");
+    return;
+  }
+  decodedJson = window.JSURL.parse(urlToImport.substring(hashPos + 2));
+  if(decodedJson && decodedJson["cntr"])
+  {
+    var timeStart, timeEnd;
+    if(decodedJson["start"] && decodedJson["stop"])
+    {
+      timeStart = new Date(decodedJson.start);
+      timeEnd   = new Date(decodedJson.stop);
+    } else if(decodedJson["value"] && decodedJson["unit"])
+    {
+      var unitsArr = [
+        ["second", 1000],
+        ["minute", 60000],
+        ["hour", 3600000],
+        ["day", 86400000]
+        ];
+      var unitMultiplier = 1;
+      for(var i = 0; i < unitsArr.length; ++i)
+      {
+        if(-1 < decodedJson["unit"].indexOf(unitsArr[i][0]))
+        {
+          unitMultiplier = unitsArr[i][1];
+          break;
+        }
+      }
+      timeEnd = new Date();
+      timeStart = new Date(timeEnd.getTime() - (decodedJson.value * unitMultiplier));
+    }
+    // reset metric name eles
+    removeAllChilds(document.querySelector(".metric_names"));
+    for(var i = 0; i < decodedJson.cntr.length; ++i)
+    {
+      // set metric name eles (including color)
+      addMetricNameField(decodedJson.cntr[i]);
+    }
+    initializePlusButton();
+    setTimeFields(timeStart, timeEnd);
+    if(mainGraticule)
+    {
+      mainGraticule.setTimeRange([timeStart.getTime(), timeEnd.getTime()]);
+    }
+
+    // do fetchMeasureData()
+    
+    if(mainGraticule)
+    {
+      mainGraticule.resetData();
+    }
+    fetchAllMetricFields(timeStart, timeEnd);
+  }
+}
 function submitMetricName()
 {
   if(mainGraticule)
@@ -823,6 +883,10 @@ function submitMetricName()
                             document.getElementsByName("metric_from_time")[0].value);
   var metricTo   = new Date(document.getElementsByName("metric_to_date"  )[0].value + " " +
                             document.getElementsByName("metric_to_time"  )[0].value);
+  fetchAllMetricFields(metricFrom, metricTo);
+}
+function fetchAllMetricFields(metricFrom, metricTo)
+{
   var intervalMs = calcIntervalMs(metricFrom, metricTo);
   for(var i = 0; ; ++i)
   {
@@ -851,7 +915,7 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
     return;
   }
   // Fetch some data outside for smooth scrolling
-  var timeDelta = timeEnd - timeStart;
+  var timeDelta = timeEnd.getTime() - timeStart.getTime();
   timeStart = new Date(timeStart.getTime() - timeDelta);
   timeEnd = new Date(timeEnd.getTime() + timeDelta);
   var from = timeStart.toISOString();
