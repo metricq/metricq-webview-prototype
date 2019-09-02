@@ -437,16 +437,32 @@ function registerCallbacks()
       ctx.fillStyle = "rgba(0,0,0,0.8)";
       ctx.fillRect(curPosOnCanvas[0] - 1, mainGraticule.graticuleDimensions[1], 2, mainGraticule.graticuleDimensions[3]);
       ctx.font = "14px Sans";
+      var metricsArray = new Array();
+      var maxTextWidth = 0;
       for(var i = 0; i < mainGraticule.series.length; ++i)
       {
-        var curTextLine = (new Number(mainGraticule.series[i].getValueAtTime(curPoint[0]))).toFixed(3) + " " + mainGraticule.series[i].name;
-        var textWidth = ctx.measureText(curTextLine).width;
-        ctx.fillStyle = determineColorForMetric(mainGraticule.series[i].name.split("/")[0]);
+        var newEntry = [
+            mainGraticule.series[i].getValueAtTime(curPoint[0]),
+            mainGraticule.series[i].name.split("/")[0]
+          ];
+        var curTextLine = (new Number(newEntry[0])).toFixed(3) + " " + mainGraticule.series[i].name;
+        newEntry.push(curTextLine);
+        newEntry.push(ctx.measureText(curTextLine).width);
+        if(newEntry[3] > maxTextWidth)
+        {
+          maxTextWidth = newEntry[3];
+        }
+        metricsArray.push(newEntry);
+      }
+      metricsArray.sort(function (a,b) { return b[0] - a[0]; } );
+      for(var i = 0; i < metricsArray.length; ++i)
+      {
+        ctx.fillStyle = determineColorForMetric(metricsArray[i][1]);
         ctx.globalAlpha = 0.4;
-        ctx.fillRect(curPosOnCanvas[0] + 10, curPosOnCanvas[1] + i * 20 - 15, textWidth, 20)
+        ctx.fillRect(curPosOnCanvas[0] + 10, curPosOnCanvas[1] + i * 20 - 15, maxTextWidth, 20);
         ctx.fillStyle = "#000000";
         ctx.globalAlpha = 1;
-        ctx.fillText(curTextLine, curPosOnCanvas[0] + 10, curPosOnCanvas[1] + i * 20);
+        ctx.fillText(metricsArray[i][2], curPosOnCanvas[0] + 10, curPosOnCanvas[1] + i * 20);
       }
     }
   });
