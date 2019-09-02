@@ -54,6 +54,10 @@ function init()
   ctx = createChart();
   registerCallbacks();
   initializeMetricNames();
+  if(-1 < location.href.indexOf("#/"))
+  {
+    urlImport(location.href);
+  }
 }
 function initializeMetricNames()
 {
@@ -327,7 +331,7 @@ function initializePlusButton()
   var plusButtonEle = document.createElement("button");
   plusButtonEle.appendChild(document.createTextNode("+"));
   plusButtonEle.setAttribute("class", "plus_button");
-  plusButtonEle.addEventListener("click", addMetricNameField);
+  plusButtonEle.addEventListener("click", function () { addMetricNameField();});
   metricNamesEle.appendChild(plusButtonEle);
 }
 function addMetricNameField(predefinedValue)
@@ -813,9 +817,13 @@ function calcIntervalMs(metricFrom, metricTo)
   var countOfDataPoints = (canvasDimensions[0] - canvasSpaceLeftTop[0]) / xPixelRequest;
   return Math.floor((metricTo.getTime() - metricFrom.getTime()) / countOfDataPoints);
 }
-function urlImport()
+function urlImport(importUrlString)
 {
-  var urlToImport = document.getElementsByName("metric_import")[0].value;
+  var urlToImport = importUrlString;
+  if(!urlToImport)
+  {
+    urlToImport = document.getElementsByName("metric_import")[0].value;
+  }
   var hashPos = urlToImport.indexOf("#/");
   if(-1 == hashPos)
   {
