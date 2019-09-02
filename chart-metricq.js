@@ -420,6 +420,37 @@ function registerCallbacks()
             maxXPos = mouseDown.startPos[0];
           }
           ctx.fillRect(minXPos, mainGraticule.graticuleDimensions[1], maxXPos - minXPos, mainGraticule.graticuleDimensions[3]);
+          var timeValueStart = mainGraticule.getTimeValueAtPoint( [minXPos, mouseDown.relativeStartPos[1]]);
+          var timeValueEnd = mainGraticule.getTimeValueAtPoint([maxXPos, mouseDown.relativeStartPos[1]]);
+          
+          if(timeValueStart && timeValueEnd)
+          {
+            var timeDelta = timeValueEnd[0] - timeValueStart[0];
+            var centerPos = [
+              Math.floor(minXPos + (maxXPos - minXPos) / 2),
+              Math.floor(mainGraticule.graticuleDimensions[1] + (mainGraticule.graticuleDimensions[3] - mainGraticule.graticuleDimensions[1]) / 2)
+            ];
+            var deltaString = "";
+            if(86400000 < timeDelta)
+            {
+              deltaString = (new Number(timeDelta / 86400000)).toFixed(2) + " days";
+            } else if(3600000 < timeDelta)
+            {
+              deltaString = (new Number(timeDelta / 3600000)).toFixed(2) + " hours";
+            } else if(60000 < timeDelta)
+            {
+              deltaString = (new Number(timeDelta / 60000)).toFixed(1) + " minutes";
+            } else if(1000 < timeDelta)
+            {
+              deltaString = (new Number(timeDelta / 1000)).toFixed(1) + " seconds";
+            } else
+            {
+              deltaString = Math.floor(timeDelta) + " milliseconds";
+            }
+            centerPos[0] -= Math.round(ctx.measureText(deltaString).width / 2);
+            ctx.fillStyle = "#000000";
+            ctx.fillText(deltaString , centerPos[0], centerPos[1]);
+          }
         }
       }
     }
