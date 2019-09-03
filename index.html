@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <script src="graticule.js"></script>
 <script src="chart-metricq.js"></script>
+<script src="metric-params.js"></script>
 <script src="pseudo-crc32.js"></script>
 <script src="color-conversion.js"></script>
 <script src="tabbing.js"></script>
@@ -55,7 +56,7 @@
 <h1>Metricq-webview-prototype</h1>
 <div class="metric_specification">
   <div class="field_description"><label for="metric_import">Importieren</label></div>
-  <div class="field_inputs"><input type="text" name="metric_import" size="50" /><button onclick="urlImport()">Import</button></div>
+  <div class="field_inputs"><input type="text" name="metric_import" id="metric_import" size="50" /><button onclick="urlImport()">Import</button></div>
   <div class="field_description"><label for="metric_from_time">Zeit beginn</label></div>
   <div class="field_inputs"><input type="date" name="metric_from_date" /><input type="time" step="any" name="metric_from_time" id="metric_from_time" /></div>
   <div class="field_description"><label for="metric_to_time">Zeit ende</label></div>

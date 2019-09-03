@@ -48,45 +48,15 @@ var stylingOptions = {
 var stylingTabs = undefined;
 function init()
 {
-  setTimeFields(new Date((new Date()).getTime() - 7200000), new Date());
   initializeStyleOptions();
   masterWrapper = document.querySelector(".master_wrapper");
   ctx = createChart();
   registerCallbacks();
-  initializeMetricNames();
+  metricParams.init();
+  metricParams.setTimeFields(new Date((new Date()).getTime() - 7200000), new Date());
   if(-1 < location.href.indexOf("#/"))
   {
     urlImport(location.href);
-  }
-}
-function initializeMetricNames()
-{
-  var presetsEle = document.getElementById("metric_preset_selection");
-  for(var curPreset in metricPresets)
-  {
-    var curOption = document.createElement("option");
-    curOption.value = curPreset;
-    curOption.appendChild(document.createTextNode(curPreset));
-    presetsEle.appendChild(curOption);
-  }
-  presetsEle.addEventListener("change", function(evtObj) {
-    var curPreset = evtObj.target.value;
-    removeAllChilds(document.querySelector(".metric_names"));
-    for(var i = 0; i < metricPresets[curPreset].length; ++i)
-    {
-      addMetricNameField(metricPresets[curPreset][i]);
-    }
-    initializePlusButton();
-  });
-  var wrapperEle = document.querySelector(".metric_names");
-  addMetricNameField();
-  initializePlusButton();
-}
-function removeAllChilds(parentEle)
-{
-  for(var i = parentEle.childNodes.length - 1; i >= 0; --i)
-  {
-    parentEle.removeChild(parentEle.childNodes[i]);
   }
 }
 function initializeStyleOptions()
@@ -330,70 +300,6 @@ function putErrorMarkerAt(textareaErrorHappened, lineAt, columnAt)
                    });
   setTimeout(function(ele) { return function() { ele.parentNode.removeChild(ele);}; }(arrowEle), 2800);
 }
-function setTimeFields(timeFrom, timeTo)
-{
-  var curDate = new Date();
-  document.getElementsByName("metric_from_date")[0].value = buildIso8601Date(timeFrom);
-  document.getElementsByName("metric_to_date")[0].value = buildIso8601Date(timeTo);
-  document.getElementsByName("metric_from_date")[0].max = buildIso8601Date(curDate);
-  document.getElementsByName("metric_to_date")[0].max = buildIso8601Date(curDate);
-  document.getElementsByName("metric_from_time")[0].value = dateToHHMMSSStr(timeFrom);
-  document.getElementsByName("metric_to_time")[0].value = dateToHHMMSSStr(timeTo);
-}
-function buildIso8601Date(dateObj)
-{
-  return dateObj.getFullYear() + "-" + ((dateObj.getMonth() + 1) < 10 ? "0" : "") + (dateObj.getMonth() + 1) + "-" + (dateObj.getDate() < 10 ? "0" : "") + dateObj.getDate();
-}
-function initializePlusButton()
-{
-  var metricNamesEle = document.querySelector(".metric_names");
-  var plusButtonEle = document.createElement("button");
-  plusButtonEle.appendChild(document.createTextNode("+"));
-  plusButtonEle.setAttribute("class", "plus_button");
-  plusButtonEle.addEventListener("click", function () { addMetricNameField();});
-  metricNamesEle.appendChild(plusButtonEle);
-}
-function addMetricNameField(predefinedValue)
-{
-  var i;
-  var lastElement = undefined;
-  var previousElement = undefined;
-  for(i = 0; ; ++i)
-  {
-    previousElement = lastElement;
-    lastElement = document.getElementById("metric_name[" + i + "]")
-    if( ! lastElement)
-    {
-      break;
-    }
-  }
-  var metricNamesEle = document.querySelector(".metric_names");
-  var plusButtonEle = document.querySelector(".plus_button");
-  var fieldDescriptionEle = document.createElement("div");
-  fieldDescriptionEle.setAttribute("class", "field_description");
-  var labelEle = document.createElement("label");
-  labelEle.setAttribute("for", "metric_name[" + i + "]");
-  labelEle.appendChild(document.createTextNode("Metrik Name (" + (i + 1) + ")"));
-  fieldDescriptionEle.appendChild(labelEle);
-  metricNamesEle.insertBefore(fieldDescriptionEle, plusButtonEle);
-
-  var fieldInputsEle = document.createElement("div");
-  fieldInputsEle.setAttribute("class", "field_inputs");
-  var inputEle = document.createElement("input");
-  inputEle.setAttribute("type", "text");
-  inputEle.setAttribute("name", "metric_name[" + i + "]");
-  inputEle.setAttribute("size", "60");
-  if(predefinedValue)
-  {
-    inputEle.setAttribute("value", predefinedValue);
-  } else if(previousElement)
-  {
-    inputEle.setAttribute("value", previousElement.value);
-  }
-  inputEle.setAttribute("id", "metric_name[" + i + "]");
-  fieldInputsEle.appendChild(inputEle);
-  metricNamesEle.insertBefore(fieldInputsEle, plusButtonEle);
-}
 function registerCallbacks()
 {
   mouseDown.registerDragCallback(function(evtObj) {
@@ -604,7 +510,7 @@ function updateAllSeriesesBands(lastUpdateTime)
   }
   var metricFrom = new Date(mainGraticule.curTimeRange[0]);
   var metricTo   = new Date(mainGraticule.curTimeRange[1]);
-  setTimeFields(metricFrom, metricTo);
+  metricParams.setTimeFields(metricFrom, metricTo);
   var intervalMs = Math.floor((mainGraticule.curTimeRange[1] - mainGraticule.curTimeRange[0]) / 40);
   var distinctMetrics = new Object();
   for(var i = 0; i < mainGraticule.series.length; ++i)
@@ -931,14 +837,13 @@ function urlImport(importUrlString)
       timeStart = new Date(timeEnd.getTime() - (decodedJson.value * unitMultiplier));
     }
     // reset metric name eles
-    removeAllChilds(document.querySelector(".metric_names"));
+    metricParams.resetNames();
     for(var i = 0; i < decodedJson.cntr.length; ++i)
     {
       // set metric name eles (including color)
-      addMetricNameField(decodedJson.cntr[i]);
+      metricParams.addNameField(decodedJson.cntr[i]);
     }
-    initializePlusButton();
-    setTimeFields(timeStart, timeEnd);
+    metricParams.setTimeFields(timeStart, timeEnd);
     if(mainGraticule)
     {
       mainGraticule.setTimeRange([timeStart.getTime(), timeEnd.getTime()]);
@@ -968,22 +873,15 @@ function submitMetricName()
 function fetchAllMetricFields(metricFrom, metricTo)
 {
   var intervalMs = calcIntervalMs(metricFrom, metricTo);
-  for(var i = 0; ; ++i)
+  metricParams.onEachName(function(nameEle, nameValue)
   {
-    var curMetricNameEles = document.getElementsByName("metric_name[" + i + "]");
-    if(0 < curMetricNameEles.length)
+    if(0 < nameValue.length)
     {
-      if(0 < curMetricNameEles[0].value.length)
-      {
-        curMetricNameEles[0].parentNode.style.backgroundColor = determineColorForMetric(curMetricNameEles[0].value.split("/")[0]);
-        curMetricNameEles[0].style.backgroundColor = "inherit";
-        fetchMeasureData(metricFrom, metricTo, intervalMs, curMetricNameEles[0].value, function(jsonObj) { processMetricQData(jsonObj, false, false); });
-      }
-    } else
-    {
-      break;
+      nameEle.parentNode.style.backgroundColor = determineColorForMetric(nameValue.split("/")[0]);
+      nameEle.style.backgroundColor = "inherit";
+      fetchMeasureData(metricFrom, metricTo, intervalMs, nameValue, function(jsonObj) { processMetricQData(jsonObj, false, false); });
     }
-  }
+  });
   setTimeout(allAjaxCompletedWatchdog, 30);
 }
 
