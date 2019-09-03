@@ -849,10 +849,16 @@ function Series(paramName, paramStyleOptions)
       var betterIndex = closestPointIndex;
       if("next" == this.styleOptions.connect)
       {
-        --betterIndex;
+        if(this.points[betterIndex].time > timeAt)
+        {
+          --betterIndex;
+        }
       } else if ("last" == this.styleOptions.connect)
       {
-        ++betterIndex;
+        if(this.points[betterIndex].time < timeAt)
+        {
+          ++betterIndex;
+        }
       } else if("direct" == this.styleOptions.connect)
       {
         var firstPoint, secondPoint;

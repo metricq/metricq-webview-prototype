@@ -216,6 +216,7 @@ function repeatString(baseStr, repetitions)
 }
 function storeStylingsInLocalStorage()
 {
+  var colorFunctionTextarea = document.getElementById("style_options_color_choosing");
   localStorage.setItem("styling", JSON.stringify(stylingOptions.list));
   localStorage.setItem("colorFunction", colorFunctionTextarea.value);
 }
@@ -258,6 +259,7 @@ function stylingHasChanged(evtObj)
     } catch(exc)
     {
       console.log("Couldn't parse style Options");
+      console.log(exc);
       handleStylingTextareaError(exc, lastParsedTextarea);
       document.querySelector(".style_options_wrapper").style.backgroundColor = "rgba(255, 64, 64, 0.5)";
     }
