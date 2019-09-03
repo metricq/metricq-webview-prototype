@@ -90,6 +90,24 @@ var metricParams = {
     plusButtonEle.addEventListener("click", function () { metricParams.addMetricNameField();});
     metricNamesEle.appendChild(plusButtonEle);
   },
+  setLocation: function(timeFrom, timeTo)
+  {
+    var locationJson = {
+      "cntr": metricParams.namesValues,
+      "start": timeFrom.getTime(),
+      "stop": timeTo.getTime(),
+      "type": "default"
+    };
+    var stringifiedJson = window.JSURL.stringify(locationJson);
+    var curLoc = window.location.href;
+    if(-1 < curLoc.indexOf("#"))
+    {
+      window.location.href = curLoc.substring(0, curLoc.indexOf("#")) + "#/" + stringifiedJson;
+    } else
+    {
+      window.location.href += "#/" + stringifiedJson;
+    }
+  },
   setTimeFields: function(timeFrom, timeTo)
   {
     var curDate = new Date();

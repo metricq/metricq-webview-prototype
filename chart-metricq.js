@@ -511,6 +511,7 @@ function updateAllSeriesesBands(lastUpdateTime)
   var metricFrom = new Date(mainGraticule.curTimeRange[0]);
   var metricTo   = new Date(mainGraticule.curTimeRange[1]);
   metricParams.setTimeFields(metricFrom, metricTo);
+  metricParams.setLocation(metricFrom, metricTo);
   var intervalMs = Math.floor((mainGraticule.curTimeRange[1] - mainGraticule.curTimeRange[0]) / 40);
   var distinctMetrics = new Object();
   for(var i = 0; i < mainGraticule.series.length; ++i)
@@ -868,6 +869,7 @@ function submitMetricName()
                             document.getElementsByName("metric_from_time")[0].value);
   var metricTo   = new Date(document.getElementsByName("metric_to_date"  )[0].value + " " +
                             document.getElementsByName("metric_to_time"  )[0].value);
+  metricParams.setLocation(metricFrom, metricTo);
   fetchAllMetricFields(metricFrom, metricTo);
 }
 function fetchAllMetricFields(metricFrom, metricTo)
