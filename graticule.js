@@ -668,7 +668,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
             }
           }
         }
-        if(drawDots || 1 == this.series[i].points[j].count)
+        if(1 == this.series[i].points[j].count || (drawDots && 0 != this.series[i].points[j].count))
         {
           this.ctx.fillRect(x - halfPointWidth, y - halfPointWidth, pointWidth, pointWidth);
         }
@@ -810,7 +810,7 @@ function Series(paramName, paramStyleOptions)
     delete this.points;
     this.points = new Array();
   };
-  this.getValueAtTime = function(timeAt)
+  this.getValueAtTimeAndIndex = function(timeAt)
   {
     if("number" !== typeof timeAt || 0 == this.points.length)
     {
@@ -873,7 +873,7 @@ function Series(paramName, paramStyleOptions)
         }
         var timeDelta = secondPoint.time - firstPoint.time;
         var valueDelta = secondPoint.value - firstPoint.value;
-        return firstPoint.value + valueDelta * ((timeAt - firstPoint.time) / timeDelta);
+        return [firstPoint.value + valueDelta * ((timeAt - firstPoint.time) / timeDelta), betterIndex];
       }
       if(0 > betterIndex)
       {
@@ -882,10 +882,10 @@ function Series(paramName, paramStyleOptions)
       {
         betterIndex = this.points.length - 1;
       }
-      return this.points[betterIndex].value;
+      return [this.points[betterIndex].value, betterIndex];
     } else
     {
-      return this.points[closestPointIndex].value;
+      return [this.points[closestPointIndex].value, betterIndex];
     }
   };
   this.addPoint = function (newPoint, isBigger) {

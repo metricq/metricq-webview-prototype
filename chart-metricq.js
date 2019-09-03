@@ -458,10 +458,12 @@ function registerCallbacks()
     }
   });
   mouseDown.registerDropCallback(function(evtObj) {
-    if(!keyDown.is(16) && mainGraticule && mouseDown.startTarget && "CANVAS" === mouseDown.startTarget.tagName)
+    var relativeStart = mouseDown.relativeStartPos;
+    var relativeEnd = calculateActualMousePos(evtObj);
+    if(!keyDown.is(16) && mainGraticule && mouseDown.startTarget && "CANVAS" === mouseDown.startTarget.tagName && 1 < Math.abs(relativeStart[0] - relativeEnd[0]))
     {
-      var posEnd   = mainGraticule.getTimeValueAtPoint( mouseDown.relativeStartPos );
-      var posStart = mainGraticule.getTimeValueAtPoint( calculateActualMousePos(evtObj));
+      var posEnd   = mainGraticule.getTimeValueAtPoint( relativeStart );
+      var posStart = mainGraticule.getTimeValueAtPoint( relativeEnd );
       if(!posEnd || !posStart)
       {
         return;
@@ -476,6 +478,20 @@ function registerCallbacks()
       mainGraticule.automaticallyDetermineRanges(false, true);
       setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 200);
       mainGraticule.draw(false);
+    } else if(keyDown.is(17) && mainGraticule && mouseDown.startTarget && "CANVAS" === mouseDown.startTarget.tagName)
+    {
+      var posClicked = relativeEnd;
+      var posOnGrid = mainGraticule.getTimeValueAtPoint(posClicked);
+      ctx.font = "14px Sans";
+      ctx.fillStyle = "#000000";
+      for(var i = 0; i < mainGraticule.series.length; ++i)
+      {
+        var curIndex = mainGraticule.series[i].getValueAtTimeAndIndex(posOnGrid[0])[1];
+        var curText = mainGraticule.series[i].name
+          + ", Index " + curIndex
+          + ", Count " + mainGraticule.series[i].points[curIndex].count;
+        ctx.fillText(curText, posClicked[0], i * 20 + 20 + mainGraticule.graticuleDimensions[1]);
+      }
     }
   });
   mouseDown.registerMoveCallback(function(evtObj) {
@@ -496,7 +512,7 @@ function registerCallbacks()
       for(var i = 0; i < mainGraticule.series.length; ++i)
       {
         var newEntry = [
-            mainGraticule.series[i].getValueAtTime(curPoint[0]),
+            mainGraticule.series[i].getValueAtTimeAndIndex(curPoint[0])[0],
             mainGraticule.series[i].name.split("/")[0]
           ];
         var curTextLine = (new Number(newEntry[0])).toFixed(3) + " " + mainGraticule.series[i].name;
@@ -723,9 +739,15 @@ function processMetricQData(datapointsJSON, doDraw, doResize)
       {
         if(mainGraticule.series[i].name.match(new RegExp("^" + curMetricBase + "/([a-zA-Z]+)")))
         {
-          for(var j = 0; j < mainGraticule.series[i].points.length && j < datapointsJSON[metricCountIndex].datapoints.length; ++j)
+          if(mainGraticule.series[i].points.length == datapointsJSON[metricCountIndex].datapoints.length)
           {
-            mainGraticule.series[i].points[j].count = datapointsJSON[metricCountIndex].datapoints[j][0];
+            for(var j = 0; j < mainGraticule.series[i].points.length && j < datapointsJSON[metricCountIndex].datapoints.length; ++j)
+            {
+              mainGraticule.series[i].points[j].count = datapointsJSON[metricCountIndex].datapoints[j][0];
+            }
+          } else
+          {
+            console.log("Number of series \"" + mainGraticule.series[i].name + "\" points (" + mainGraticule.series[i].points.length  + ") does not correspond with number of counts (" + datapointsJSON[metricCountIndex].length + ")!");
           }
         }
       }
