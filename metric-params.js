@@ -21,6 +21,11 @@ var metricParams = {
     metricParams.fields["presets"] = document.getElementById("metric_preset_selection");
     metricParams.fields["names"] = document.querySelector(".metric_names");
     metricParams.fields["pixels"] = document.getElementsByName("metric_request_every_that_many_pixels")[0];
+    metricParams.fields["to_date"].addEventListener("change",function(evt){
+      var fromEle = metricParams.fields["from_date"];
+      fromEle.setAttribute("max", evt.target.value);
+    });
+
     metricParams.initPresets();
   },
   initPresets: function()
@@ -87,7 +92,7 @@ var metricParams = {
     var plusButtonEle = document.createElement("button");
     plusButtonEle.appendChild(document.createTextNode("+"));
     plusButtonEle.setAttribute("class", "plus_button");
-    plusButtonEle.addEventListener("click", function () { metricParams.addMetricNameField();});
+    plusButtonEle.addEventListener("click", function () { metricParams.addNameField();});
     metricNamesEle.appendChild(plusButtonEle);
   },
   setLocation: function(timeFrom, timeTo)
@@ -107,6 +112,16 @@ var metricParams = {
     {
       window.location.href += "#/" + stringifiedJson;
     }
+  },
+  getFrom: function()
+  {
+    return new Date(metricParams.fields["from_date"].value + " " +
+                    metricParams.fields["from_time"].value);
+  },
+  getTo: function()
+  {
+    return new Date(metricParams.fields["to_date"].value + " " +
+                    metricParams.fields["to_time"].value);
   },
   setTimeFields: function(timeFrom, timeTo)
   {

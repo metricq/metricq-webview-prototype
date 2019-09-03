@@ -308,6 +308,7 @@ function registerCallbacks()
       if(mouseDown.previousPos[0] !== mouseDown.currentPos[0]
       || mouseDown.previousPos[1] !== mouseDown.currentPos[1])
       {
+        evtObj.preventDefault();
         if(keyDown.is(16))
         {
           mainGraticule.moveTimeAndValueRanges( (mouseDown.currentPos[0] - mouseDown.previousPos[0]) * -1 * mainGraticule.curTimePerPixel, 0);
@@ -368,6 +369,7 @@ function registerCallbacks()
     var relativeEnd = calculateActualMousePos(evtObj);
     if(!keyDown.is(16) && mainGraticule && mouseDown.startTarget && "CANVAS" === mouseDown.startTarget.tagName && 1 < Math.abs(relativeStart[0] - relativeEnd[0]))
     {
+      evtObj.preventDefault();
       var posEnd   = mainGraticule.getTimeValueAtPoint( relativeStart );
       var posStart = mainGraticule.getTimeValueAtPoint( relativeEnd );
       if(!posEnd || !posStart)
@@ -386,6 +388,7 @@ function registerCallbacks()
       mainGraticule.draw(false);
     } else if(keyDown.is(17) && mainGraticule && mouseDown.startTarget && "CANVAS" === mouseDown.startTarget.tagName)
     {
+      evtObj.preventDefault();
       var posClicked = relativeEnd;
       var posOnGrid = mainGraticule.getTimeValueAtPoint(posClicked);
       ctx.font = "14px Sans";
@@ -487,10 +490,6 @@ function registerCallbacks()
         mainGraticule.draw(false);
       }
     }
-  });
-  document.getElementsByName("metric_to_date")[0].addEventListener("change",function(evt){
-    var fromEle = document.getElementsByName("metric_from_date")[0];
-    fromEle.setAttribute("max", evt.target.value);
   });
 }
 function calculateActualMousePos(evtObj)
@@ -865,12 +864,8 @@ function submitMetricName()
   {
     mainGraticule.resetData();
   }
-  var metricFrom = new Date(document.getElementsByName("metric_from_date")[0].value + " " +
-                            document.getElementsByName("metric_from_time")[0].value);
-  var metricTo   = new Date(document.getElementsByName("metric_to_date"  )[0].value + " " +
-                            document.getElementsByName("metric_to_time"  )[0].value);
-  metricParams.setLocation(metricFrom, metricTo);
-  fetchAllMetricFields(metricFrom, metricTo);
+  metricParams.setLocation(metricParams.getFrom(), metricParams.getTo());
+  fetchAllMetricFields(metricParams.getFrom(), metricParams.getTo());
 }
 function fetchAllMetricFields(metricFrom, metricTo)
 {
