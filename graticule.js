@@ -467,50 +467,276 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
     this.drawSeries(this.curTimeRange, this.curValueRange, this.curTimePerPixel, this.curValuesPerPixel);
     this.ctx.restore();
   }
-  this.drawBands = function(timeRange, valueRange, timePerPixel, valuesPerPixel)
+  this.parseStyleOptions = function(styleOptions)
   {
-    for(var i = 0; i < this.bands.length; ++i)
+    var parsedObj = {
+      "skip": false,
+      "connect": 3,
+      "pointWidth": 2,
+      "halfPointWidth": 1,
+      "drawDots": false,
+      "lineDash": []
+    };
+    if(styleOptions)
     {
-      /* connectionType is responsible for the way the
+      // first parse Options for parsedObj
+      parsedObj.skip = !! styleOptions.skip;
+      /* connect is responsible for the way the
        * data points will be connected
        * 1 = direct
        * 2 = last
        * 3 = next
        */
-      var connectionType = 1;
-      if(this.bands[i].styleOptions)
+      switch(styleOptions.connect)
       {
-        if(this.bands[i].styleOptions.skip)
+        case "next":
+          parsedObj.connect = 3;
+          break;
+        case "last":
+          parsedObj.connect = 2;
+          break;
+        case "direct":
+          parsedObj.connect = 1;
+          break;
+        case "none":
+        default:
+          parsedObj.connect = 0;
+          break;
+      }
+      if(styleOptions.width)
+      {
+        parsedObj.pointWidth = styleOptions.width;
+        parsedObj.halfPointWidth = Math.floor(styleOptions.width / 2.00);
+      }
+      parsedObj.drawDots = !! styleOptions.dots;
+
+      // second parse Options to be applied to ctx immediatly
+      if(styleOptions.color)
+      {
+        this.ctx.fillStyle = styleOptions.color;
+        this.ctx.strokeStyle = styleOptions.color;
+      }
+      if(styleOptions.fillPattern)
+      {
+        var img = new Image();
+        img.src = styleOptions.fillPattern;
+        this.ctx.fillStyle = this.ctx.createPattern(img, "repeat");
+      }
+      if(styleOptions.gradient)
+      {
+        this.parseGradient(styleOptions.gradient);
+      }
+      if(styleOptions.alpha)
+      {
+        this.ctx.globalAlpha = styleOptions.alpha;
+      }
+      if(styleOptions.lineWidth)
+      {
+        this.ctx.lineWidth = styleOptions.lineWidth;
+      }
+      if(styleOptions.lineDash)
+      {
+        this.ctx.setLineDash(styleOptions.lineDash);
+      }
+    }
+
+    return parsedObj;
+  }
+  this.parseGradient = function(gradientStr)
+  {
+    if(gradientStr.match(/^\s*linear-gradient/))
+    {
+      var innerPart = gradientStr.replace(/^\s*linear-gradient\s*\(/, "");
+      innerPart = innerPart.replace(/\s*\)\s*$/, "");
+      var gradientData = this.parseInnerGradientStr(innerPart);
+      if(!gradientData)
+      {
+        console.log("Could not parse gradient.");
+        return;
+      }
+      var centerPos = [ this.graticuleDimensions[0] + this.graticuleDimensions[2] / 2,
+                        this.graticuleDimensions[1] + this.graticuleDimensions[3] / 2];
+      var startPos = [centerPos[0] + Math.cos((270 - gradientData.direction) * Math.PI * 2 / 360) * this.graticuleDimensions[2] / 2,
+                      centerPos[1] + Math.sin((270 - gradientData.direction) * Math.PI * 2 / 360) * this.graticuleDimensions[3] / 2];
+      var endPos = [centerPos[0] + Math.cos((gradientData.direction * -1 + 90) * Math.PI * 2 / 360) * this.graticuleDimensions[2] / 2,
+                      centerPos[1] + Math.sin((gradientData.direction * -1 + 90) * Math.PI * 2 / 360) * this.graticuleDimensions[3] / 2];
+      var deltaPos = [endPos[0] - startPos[0],
+                      endPos[1] - startPos[1]];
+      var distance = Math.sqrt(Math.pow(deltaPos[0], 2) + Math.pow(deltaPos[1], 2));
+      var myGradient = this.ctx.createLinearGradient(startPos[0], startPos[1], endPos[0], endPos[1]);
+      var lastRelativePosition = 0;
+      var relativePosition;
+      for(var i = 0; i < gradientData.colorStops.length; ++i)
+      {
+        if("none" == gradientData.colorStops[i][2])
         {
-          continue;
-        }
-        if(this.bands[i].styleOptions.color)
-        {
-          this.ctx.fillStyle = this.bands[i].styleOptions.color;
-        }
-        if(this.bands[i].styleOptions.fillPattern)
-        {
-          var img = new Image();
-          img.src = this.bands[i].styleOptions.fillPattern;
-          this.ctx.fillStyle = this.ctx.createPattern(img, "repeat");
-        }
-        if(this.bands[i].styleOptions.alpha)
-        {
-          this.ctx.globalAlpha = this.bands[i].styleOptions.alpha;
-        }
-        if(this.bands[i].styleOptions.connect)
-        {
-          if("direct" == this.bands[i].styleOptions.connect)
+          var remainingNonePositions = 0;
+          var j = i;
+          for(; j < gradientData.colorStops.length; ++j)
           {
-            connectionType = 1;
-          } else if("last" == this.bands[i].styleOptions.connect)
+            if("none" == gradientData.colorStops[j][2])
+            {
+              remainingNonePositions++;
+            } else
+            {
+              break;
+            }
+          }
+          var nextRelativePosition = lastRelativePosition;
+          if(j >= gradientData.colorStops.length)
           {
-            connectionType = 2;
-          } else if("next" == this.bands[i].styleOptions.connect)
+            nextRelativePosition = 1;
+          } else
           {
-            connectionType = 3;
+            nextRelativePosition = this.calculateGradientRelativePosition(gradientData.colorStops[j][2], gradientData.colorStops[j][1], distance);
+          }
+          relativePosition = lastRelativePosition + ((nextRelativePosition - lastRelativePosition) / (remainingNonePositions + 1));
+        } else
+        {
+          relativePosition = this.calculateGradientRelativePosition(gradientData.colorStops[i][2], gradientData.colorStops[i][1], distance);
+        }
+        myGradient.addColorStop(relativePosition, gradientData.colorStops[i][0]);
+        lastRelativePosition = relativePosition;
+      }
+      this.ctx.fillStyle = myGradient;
+      this.ctx.strokeStyle = myGradient;
+    } else if(gradientStr.match(/^\s*radial-gradient/))
+    {
+      // TODO: code me
+    }
+    return false;
+  };
+  this.calculateGradientRelativePosition = function(stopType, stopData, distance)
+  {
+    if("percent" == stopType)
+    {
+      return stopData / 100;
+    } else if("pixel" == stopType)
+    {
+      if(stopData > distance)
+      {
+        return 1;
+      } else
+      {
+        return stopData / distance;
+      }
+    }
+    return undefined;
+  };
+  this.parseInnerGradientStr = function(innerPart)
+  {
+    var tokenizedArr = this.tokenizeHeedingParantheses(innerPart);
+    var directionAngle = undefined;
+    if(1 < tokenizedArr.length)
+    {
+      if(tokenizedArr[0].match(/^\s*to [a-z ]+/))
+      {
+        var possibleStrings = [
+          ["to bottom right", 135],
+          ["to bottom left", 225],
+          ["to top right", 45],
+          ["to top left", 315],
+          ["to left", 270],
+          ["to right", 90],
+          ["to bottom", 180],
+          ["to top", 0]
+        ];
+        for(var i = 0; i < possibleStrings.length; ++i)
+        {
+          if(-1 < tokenizedArr[0].indexOf(possibleStrings[i][0]))
+          {
+            directionAngle = possibleStrings[i][1];
+            break;
           }
         }
+      }
+      if(tokenizedArr[0].match(/-?[0-9]+(\.[0-9]+)?\s*deg\s*$/))
+      {
+        directionAngle = parseFloat(tokenizedArr[0].match(/(-?[0-9]+(\.[0-9]+)?)\s*deg\s*$/)[1]);
+      }
+      if(undefined === directionAngle)
+      {
+        directionAngle = 180; // default Angle
+      }
+      var gradientData = {
+        "direction": directionAngle,
+        "colorStops": new Array()
+      };
+      for(var i = 1; i < tokenizedArr.length; ++i)
+      {
+        var curElement = ["white", 0, "none"];
+        var remainder = tokenizedArr[i];
+        if(remainder.match(/%\s*$/))
+        {
+          curElement[2] = "percent";
+        } else if(remainder.match(/px\s*$/))
+        {
+          curElement[2] = "pixel";
+        }
+        remainder = remainder.replace(/(px|%)\s*$/, "");
+        if(remainder.match(/\d+(\.\d+)?\s*$/))
+        {
+          if(!remainder.match(/[#a-fA-F]\d+(\.\d+)?\s*$/))
+          {
+            curElement[1] = parseFloat(remainder.match(/\d+(\.\d+)?\s*$/)[0]);
+            remainder = remainder.replace(/\d+(\.\d+)?\s*$/, "");
+          }
+        }
+        curElement[0] = remainder.replace(/\s*$/, "").replace(/^\s*/, "");
+
+        gradientData.colorStops.push(curElement);
+      }
+      return gradientData;
+    } else
+    {
+      return undefined;
+    }
+  };
+  this.tokenizeHeedingParantheses = function(originStr)
+  {
+    var tokenArr = new Array();
+    var curToken = "";
+    var inParantheses = 0;
+    for(var i = 0; i < originStr.length; ++i)
+    {
+      var c = originStr.charAt(i);
+      if(0 < inParantheses)
+      {
+        if(")" == c)
+        {
+          inParantheses--;
+        } else if("(" == c)
+        {
+          inParantheses++;
+        }
+        curToken += c;
+      } else if("," == c)
+      {
+        tokenArr.push(curToken);
+        curToken = "";
+      } else {
+        if("(" == c)
+        {
+          inParantheses = 1;
+        }
+        curToken += c;
+      }
+    }
+    if(0 < curToken.length)
+    {
+      tokenArr.push(curToken);
+    }
+    return tokenArr;
+  };
+  this.drawBands = function(timeRange, valueRange, timePerPixel, valuesPerPixel)
+  {
+    for(var i = 0; i < this.bands.length; ++i)
+    {
+      var styleOptions = this.parseStyleOptions(this.bands[i].styleOptions);
+      if(styleOptions.skip)
+      {
+        this.resetCtx();
+        continue;
       }
      
       var switchOverIndex = Math.floor(this.bands[i].points.length / 2) + 1; 
@@ -525,7 +751,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
         } else
         {
           // connect direct
-          if(1 == connectionType)
+          if(1 == styleOptions.connect)
           {
             this.ctx.lineTo(x,y);
           } else
@@ -533,12 +759,12 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
             if(j < switchOverIndex)
             {
               // connect last
-              if(2 == connectionType)
+              if(2 == styleOptions.connect)
               {
                 this.ctx.lineTo(previousX, y);
                 this.ctx.lineTo(x, y);
               // connect next
-              } else if(3 == connectionType)
+              } else if(3 == styleOptions.connect)
               {
                 this.ctx.lineTo(x, previousY);
                 this.ctx.lineTo(x, y);
@@ -546,12 +772,12 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
             } else
             {
               // connect last
-              if(2 == connectionType)
+              if(2 == styleOptions.connect)
               {
                 this.ctx.lineTo(x, previousY);
                 this.ctx.lineTo(x, y);
               // connext next
-              } else if(3 == connectionType)
+              } else if(3 == styleOptions.connect)
               {
                 this.ctx.lineTo(previousX, y);
                 this.ctx.lineTo(x, y);
@@ -567,83 +793,25 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
         this.ctx.closePath();
         this.ctx.fill();
       }
-      this.ctx.globalAlpha = 1;
+      this.resetCtx();
     }
   }
   this.drawSeries = function(timeRange, valueRange, timePerPixel, valuesPerPixel)
   {
     for(var i = 0; i < this.series.length; ++i)
     {
-      var pointWidth = 2;
-      var halfPointWidth = 1;
-      /* drawLineTypes:
-       *  0 = none,
-       *  1 = direct,
-       *  2 = last,
-       *  3 = next
-       */
-      var drawLineType = 0;
-      var drawDots = true;
-      if(this.series[i].styleOptions)
+      var styleOptions = this.parseStyleOptions(this.series[i].styleOptions);
+      if(styleOptions.skip)
       {
-        if(this.series[i].styleOptions.skip)
-        {
-          continue;
-        }
-        if(this.series[i].styleOptions.color)
-        {
-          this.ctx.fillStyle = this.series[i].styleOptions.color;
-        }
-        if(this.series[i].styleOptions.width)
-        {
-          pointWidth = this.series[i].styleOptions.width;
-        }
-        if(this.series[i].styleOptions.connect)
-        {
-          if("none" == this.series[i].styleOptions.connect)
-          {
-            drawLineType = 0;
-          } else {
-            if("direct" == this.series[i].styleOptions.connect)
-            {
-              drawLineType = 1;
-            } else if("last" == this.series[i].styleOptions.connect)
-            {
-              drawLineType = 2;
-            } else if("next" == this.series[i].styleOptions.connect)
-            {
-              drawLineType = 3;
-            }
-            if(this.series[i].styleOptions.color)
-            {
-              this.ctx.strokeStyle = this.series[i].styleOptions.color;
-            }
-            if(this.series[i].styleOptions.lineWidth)
-            {
-              this.ctx.lineWidth = this.series[i].styleOptions.lineWidth;
-            }
-            if(this.series[i].styleOptions.lineDash)
-            {
-              this.ctx.setLineDash(this.series[i].styleOptions.lineDash);
-            }
-          }
-        }
-        if(!this.series[i].styleOptions.dots)
-        {
-          drawDots = false;
-        }
-        if(this.series[i].styleOptions.alpha)
-        {
-          this.ctx.globalAlpha = this.series[i].styleOptions.alpha;
-        }
+        this.resetCtx();
+        continue;
       }
-      halfPointWidth = Math.round(pointWidth / 2);
       
       for(var j = 0,x,y,previousX,previousY; j < this.series[i].points.length; ++j)
       {
         x = this.graticuleDimensions[0] + Math.round((this.series[i].points[j].time - timeRange[0]) / timePerPixel);
         y = this.graticuleDimensions[1] + (this.graticuleDimensions[3] - Math.round((this.series[i].points[j].value - valueRange[0]) / valuesPerPixel));
-        if(0 < drawLineType)
+        if(0 < styleOptions.connect)
         {
           if(0 == j)
           {
@@ -652,38 +820,42 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
           } else
           {
             // connect direct
-            if(1 == drawLineType)
+            if(1 == styleOptions.connect)
             {
               this.ctx.lineTo(x, y);
             // connect last
-            } else if(2 == drawLineType)
+            } else if(2 == styleOptions.connect)
             {
               this.ctx.lineTo(previousX,y);
               this.ctx.lineTo(x, y);
             // connect next
-            } else if(3 == drawLineType)
+            } else if(3 == styleOptions.connect)
             {
               this.ctx.lineTo(x, previousY);
               this.ctx.lineTo(x, y);
             }
           }
         }
-        if(1 == this.series[i].points[j].count || (drawDots && 0 != this.series[i].points[j].count))
+        if(1 == this.series[i].points[j].count || (styleOptions.drawDots && 0 != this.series[i].points[j].count))
         {
-          this.ctx.fillRect(x - halfPointWidth, y - halfPointWidth, pointWidth, pointWidth);
+          this.ctx.fillRect(x - styleOptions.halfPointWidth, y - styleOptions.halfPointWidth, styleOptions.pointWidth, styleOptions.pointWidth);
         }
         previousX = x;
         previousY = y;
       }
-      if(0 < drawLineType)
+      if(0 < styleOptions.connect)
       {
         this.ctx.stroke();
         this.ctx.closePath();
       }
       // reset ctx style options
-      this.ctx.setLineDash([0,0]);
-      this.ctx.globalAlpha = 1;
+      this.resetCtx();
     }
+  };
+  this.resetCtx = function()
+  {
+    this.ctx.setLineDash([]);
+    this.ctx.globalAlpha = 1;
   };
   this.figureOutTimeRange = function ()
   {
