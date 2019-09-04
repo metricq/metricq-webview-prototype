@@ -435,6 +435,9 @@ function registerCallbacks()
         metricsArray.push(newEntry);
       }
       metricsArray.sort(function (a,b) { return b[0] - a[0]; } );
+      var posDate = new Date(curPoint[0]);
+      var timeString = posDate.toLocaleString();
+      ctx.fillText(timeString, curPosOnCanvas[0] + 10, curPosOnCanvas[1] - 20);
       for(var i = 0; i < metricsArray.length; ++i)
       {
         ctx.fillStyle = determineColorForMetric(metricsArray[i][1]);

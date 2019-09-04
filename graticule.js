@@ -862,14 +862,14 @@ function Series(paramName, paramStyleOptions)
       } else if("direct" == this.styleOptions.connect)
       {
         var firstPoint, secondPoint;
-        if(timeAt < this.points[betterIndex].time && 0 > betterIndex)
+        if((timeAt < this.points[betterIndex].time && 0 > betterIndex) || (betterIndex + 1) >= this.points.length)
         {
           firstPoint = this.points[betterIndex - 1];
           secondPoint = this.points[betterIndex];
         } else
         {
           firstPoint = this.points[betterIndex];
-          secondPoint = this.point[betterIndex + 1]
+          secondPoint = this.points[betterIndex + 1]
         }
         var timeDelta = secondPoint.time - firstPoint.time;
         var valueDelta = secondPoint.value - firstPoint.value;
