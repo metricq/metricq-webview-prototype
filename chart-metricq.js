@@ -826,7 +826,10 @@ function urlImport(importUrlString)
         ["second", 1000],
         ["minute", 60000],
         ["hour", 3600000],
-        ["day", 86400000]
+        ["day", 86400000],
+        ["week", 86400000 * 7],
+        ["month", 86400000 * 30],
+        ["year", 86400000 * 365]
         ];
       var unitMultiplier = 1;
       for(var i = 0; i < unitsArr.length; ++i)
