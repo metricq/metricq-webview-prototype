@@ -878,15 +878,15 @@ function submitMetricName()
 function fetchAllMetricFields(metricFrom, metricTo)
 {
   var intervalMs = calcIntervalMs(metricFrom, metricTo);
-  metricParams.onEachName(function(nameEle, nameValue)
+  metricParams.onEachName(function(fromTime, toTime, elapsedMs) { return function(nameEle, nameValue)
   {
     if(0 < nameValue.length)
     {
       nameEle.parentNode.style.backgroundColor = determineColorForMetric(nameValue.split("/")[0]);
       nameEle.style.backgroundColor = "inherit";
-      fetchMeasureData(metricFrom, metricTo, intervalMs, nameValue, function(jsonObj) { processMetricQData(jsonObj, false, false); });
+      fetchMeasureData(fromTime, toTime, elapsedMs, nameValue, function(jsonObj) { mainGraticule.setTimeRange([fromTime.getTime(), toTime.getTime()]); processMetricQData(jsonObj, false, false); });
     }
-  });
+  }; } (metricFrom, metricTo, intervalMs));
   setTimeout(allAjaxCompletedWatchdog, 30);
 }
 

@@ -11,6 +11,7 @@ var metricParams = {
   },
   namesEles: new Array(),
   namesValues: new Array(),
+  lastTimeFieldChange: 0,
 
   init: function() {
     metricParams.fields["import"] = document.getElementsByName("metric_import")[0];
@@ -25,6 +26,10 @@ var metricParams = {
       var fromEle = metricParams.fields["from_date"];
       fromEle.setAttribute("max", evt.target.value);
     });
+    metricParams.fields["from_date"].addEventListener("change", metricParams.timeWasChanged);
+    metricParams.fields["from_time"].addEventListener("change", metricParams.timeWasChanged);
+    metricParams.fields["to_date"].addEventListener("change", metricParams.timeWasChanged);
+    metricParams.fields["to_time"].addEventListener("change", metricParams.timeWasChanged);
 
     metricParams.initPresets();
   },
@@ -48,7 +53,21 @@ var metricParams = {
     metricParams.addNameField();
     metricParams.initPlusButton();
   },
-  addNameField(predefinedValue)
+  timeWasChanged: function(param)
+  {
+    if("object" == (typeof param))
+    {
+      metricParams.lastTimeFieldChange = (new Date()).getTime();
+      setTimeout(function () { return function () { metricParams.timeWasChanged(0); }; }(), 400);
+    } else ("number" == (typeof param))
+    {
+      if(((new Date()).getTime() - metricParams.lastTimeFieldChange) > 400)
+      {
+        submitMetricName();
+      }
+    }
+  },
+  addNameField: function(predefinedValue)
   {
     var i = metricParams.namesValues.length;
     if(!predefinedValue && 0 < metricParams.namesValues.length)
