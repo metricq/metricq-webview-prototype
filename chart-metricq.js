@@ -52,6 +52,7 @@ function init()
   masterWrapper = document.querySelector(".master_wrapper");
   ctx = createChart();
   registerCallbacks();
+  initializeGraticule();
   metricParams.init();
   metricParams.setTimeFields(new Date((new Date()).getTime() - 7200000), new Date());
   if(-1 < location.href.indexOf("#/"))
@@ -566,13 +567,13 @@ function updateAllSeriesesBands(lastUpdateTime)
   }
   setTimeout(allAjaxCompletedWatchdog, 30);
 }
+function initializeGraticule()
+{
+  mainGraticule = new Graticule(ctx, [canvasSpaceLeftTop[0], canvasSpaceLeftTop[1], canvasDimensions[0] - canvasSpaceLeftTop[0], canvasDimensions[1] - canvasSpaceLeftTop[1]], canvasSpaceLeftTop[0], canvasSpaceLeftTop[1], [canvasDimensions[0] + canvasSpaceLeftTop[0], canvasDimensions[1] + canvasSpaceLeftTop[1]]);
+}
 function processMetricQData(datapointsJSON, doDraw, doResize)
 {
   console.log(datapointsJSON);
-  if(! mainGraticule)
-  {
-    mainGraticule = new Graticule(ctx, [canvasSpaceLeftTop[0], canvasSpaceLeftTop[1], canvasDimensions[0] - canvasSpaceLeftTop[0], canvasDimensions[1] - canvasSpaceLeftTop[1]], canvasSpaceLeftTop[0], canvasSpaceLeftTop[1], [canvasDimensions[0] + canvasSpaceLeftTop[0], canvasDimensions[1] + canvasSpaceLeftTop[1]]);
-  }
   timers.parsing.preprocessingEnded = (new Date()).getTime();
   var distinctMetrics = new Object();
   var metricCountIndex = undefined;
@@ -854,6 +855,7 @@ function urlImport(importUrlString)
     if(mainGraticule)
     {
       mainGraticule.resetData();
+      mainGraticule.setTimeRange([timeStart.getTime(), timeEnd.getTime()]);
     }
     fetchAllMetricFields(timeStart, timeEnd);
   }
