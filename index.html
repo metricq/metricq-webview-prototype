@@ -11,6 +11,9 @@
 <script src="presets.js"></script>
 <script src="jsurl.js"></script>
 <style type="text/css">
+body {
+  font-size: 12pt;
+}
 .graticule_heading {
   text-align: center;
   font-family: Sans;
@@ -48,9 +51,43 @@
   background-color: #f0e000;
   color: #606060;
 }
+.tabbing_body textarea {
+  width: 100%;
+}
 </style>
 <style type="text/css">
-@media (max-width: 1199px)
+@media (max-width: 710px)
+{
+  .metric_specification {
+    width: 500px;
+    margin-top: 210px;
+  }
+  .style_options_wrapper {
+    width: 300px;
+    position: absolute;
+    right: 0px;
+    top: 0px;
+  }
+  .tabbing_header {
+    width: 290px;
+  }
+  .tabbing_body {
+    width: 290px;
+  }
+  .field_description, .field_inputs {
+    height: 22px;
+    font-size: 10pt;
+  }
+  .field_inputs input {
+    max-width: 150px;
+    height: 22px;
+  }
+  .field_inputs input[type=date], .field_inputs input[type=time] {
+    padding: 0px;
+    border-radius: 0px;
+  }
+}
+@media (min-width: 711px)
 {
   .metric_specification {
     width: 600px;
@@ -67,14 +104,21 @@
   .tabbing_body {
     width: 290px;
   }
+  .field_description, .field_inputs {
+    height: 22px;
+    font-size: 10pt;
+    overflow: hidden;
+  }
   .field_inputs input {
     max-width: 150px;
+    height: 22px;
   }
-  .field_description {
-    font-size: 10pt;
+  .field_inputs input[type=date], .field_inputs input[type=time] {
+    padding: 0px;
+    border-radius: 0px;
   }
 }
-@media (min-width: 1200px)
+@media (min-width: 1300px)
 {
   .metric_specification {
     width: 700px;
@@ -91,8 +135,12 @@
   .tabbing_body {
     width: 690px:
   }
+  .field_description, .field_inputs {
+    height: 28px;
+  }
   .field_inputs input {
     max-width: 350px;
+    height: 28px;
   }
 }
 </style>
