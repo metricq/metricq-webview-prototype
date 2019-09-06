@@ -178,3 +178,13 @@ var metricParams = {
     }
   }
 };
+
+
+function dateToHHMMStr(curDate)
+{
+  return (curDate.getHours() < 10 ? "0" : "") + curDate.getHours() + ":" + (curDate.getMinutes() < 10 ? "0" : "") + curDate.getMinutes();
+}
+function dateToHHMMSSStr(curDate)
+{
+  return (curDate.getHours() < 10 ? "0" : "") + curDate.getHours() + ":" + (curDate.getMinutes() < 10 ? "0" : "") + curDate.getMinutes() + ":" + (curDate.getSeconds() < 10 ? "0" : "") + curDate.getSeconds();
+}
