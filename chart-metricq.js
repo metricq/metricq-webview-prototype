@@ -449,18 +449,21 @@ function registerCallbacks()
       var maxTextWidth = 0;
       for(var i = 0; i < mainGraticule.series.length; ++i)
       {
-        var newEntry = [
-            mainGraticule.series[i].getValueAtTimeAndIndex(curPoint[0])[0],
-            mainGraticule.series[i].name.split("/")[0]
-          ];
-        var curTextLine = (new Number(newEntry[0])).toFixed(3) + " " + mainGraticule.series[i].name;
-        newEntry.push(curTextLine);
-        newEntry.push(ctx.measureText(curTextLine).width);
-        if(newEntry[3] > maxTextWidth)
+        if(0 < mainGraticule.series[i].points.length)
         {
-          maxTextWidth = newEntry[3];
+          var newEntry = [
+              mainGraticule.series[i].getValueAtTimeAndIndex(curPoint[0])[0],
+              mainGraticule.series[i].name.split("/")[0]
+            ];
+          var curTextLine = (new Number(newEntry[0])).toFixed(3) + " " + mainGraticule.series[i].name;
+          newEntry.push(curTextLine);
+          newEntry.push(ctx.measureText(curTextLine).width);
+          if(newEntry[3] > maxTextWidth)
+          {
+            maxTextWidth = newEntry[3];
+          }
+          metricsArray.push(newEntry);
         }
-        metricsArray.push(newEntry);
       }
       metricsArray.sort(function (a,b) { return b[0] - a[0]; } );
       var posDate = new Date(curPoint[0]);
@@ -631,6 +634,13 @@ function processMetricQData(datapointsJSON, doDraw, doResize)
       }
     }
     var metricParts = metric.target.split("/");
+    if("raw" == metricParts[1])
+    {
+      mainGraticule.clearSeriesesMatchingRegex(new RegExp(metricParts[0].replace(/\\./g, "\\.") + "/(min|max|avg|count)"));
+    } else if ("avg" == metricParts[1])
+    {
+      mainGraticule.clearSeriesesMatchingRegex(new RegExp(metricParts[0].replace(/\\./g, "\\.") + "/(raw)"));
+    }
     if(1 < metricParts.length)
     {
       if(undefined === distinctMetrics[metricParts[0]])
@@ -685,7 +695,10 @@ function processMetricQData(datapointsJSON, doDraw, doResize)
             }
           } else
           {
-            console.log("Number of series \"" + mainGraticule.series[i].name + "\" points (" + mainGraticule.series[i].points.length  + ") does not correspond with number of counts (" + datapointsJSON[metricCountIndex].length + ")!");
+            if(0 < mainGraticule.series[i].points.length)
+            {
+              console.log("Number of series \"" + mainGraticule.series[i].name + "\" points (" + mainGraticule.series[i].points.length  + ") does not correspond with number of counts (" + datapointsJSON[metricCountIndex].length + ")!");
+            }
           }
         }
       }

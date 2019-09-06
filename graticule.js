@@ -29,6 +29,16 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
     }
     return undefined;
   };
+  this.clearSeriesesMatchingRegex = function(matchRegex)
+  {
+    for(var i = 0; i < this.series.length; ++i)
+    {
+      if(this.series[i].name.match(matchRegex))
+      {
+        this.series[i].clear();
+      }
+    }
+  }
   this.getSeriesIndex = function(seriesSpecifier)
   {
     for(var i = 0; i < this.series.length; ++i)
