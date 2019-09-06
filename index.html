@@ -32,9 +32,7 @@
   margin: 0px;
 }
 .style_options_wrapper {
-  position: absolute;
-  right: 0px;
-  top: 0px;
+  float: right;
 }
 .style_wrapper {
   float: left;
@@ -51,29 +49,78 @@
   color: #606060;
 }
 </style>
+<style type="text/css">
+@media (max-width: 1199px)
+{
+  .metric_specification {
+    width: 600px;
+  }
+  .style_options_wrapper {
+    width: 300px;
+    position: absolute;
+    right: 0px;
+    top: 0px;
+  }
+  .tabbing_header {
+    width: 290px;
+  }
+  .tabbing_body {
+    width: 290px;
+  }
+  .field_inputs input {
+    max-width: 150px;
+  }
+  .field_description {
+    font-size: 10pt;
+  }
+}
+@media (min-width: 1200px)
+{
+  .metric_specification {
+    width: 700px;
+  }
+  .style_options_wrapper {
+    width: 700px;
+    position: absolute;
+    right: 0px;
+    top: 0px;
+  }
+  .tabbing_header {
+    width: 690px;
+  }
+  .tabbing_body {
+    width: 690px:
+  }
+  .field_inputs input {
+    max-width: 350px;
+  }
+}
+</style>
 </head>
 <body>
 <h1>Metricq-webview-prototype</h1>
-<div class="metric_specification">
-  <div class="field_description"><label for="metric_import">Importieren</label></div>
-  <div class="field_inputs"><input type="text" name="metric_import" id="metric_import" size="50" /><button onclick="urlImport()">Import</button></div>
-  <div class="field_description"><label for="metric_from_time">Zeit beginn</label></div>
-  <div class="field_inputs"><input type="date" name="metric_from_date" /><input type="time" step="any" name="metric_from_time" id="metric_from_time" /></div>
-  <div class="field_description"><label for="metric_to_time">Zeit ende</label></div>
-  <div class="field_inputs"><input type="date" name="metric_to_date" /><input type="time" step="any" name="metric_to_time" id="metric_to_time" /></div>
-  <div class="field_description"><label for="metric_preset_selection">Preset-Auswahl</label></div>
-  <div class="field_inputs"><select id="metric_preset_selection" size="1"></select></div>
-  <div class="cleaner"> &nbsp; </div>
-  <div class="metric_names">
-    &nbsp;
+<div class="parameters_wrapper">
+  <div class="metric_specification">
+    <div class="field_description"><label for="metric_import">Importieren</label></div>
+    <div class="field_inputs"><input type="text" name="metric_import" id="metric_import" size="50" /><button onclick="urlImport()">Import</button></div>
+    <div class="field_description"><label for="metric_from_time">Zeit beginn</label></div>
+    <div class="field_inputs"><input type="date" name="metric_from_date" /><input type="time" step="any" name="metric_from_time" id="metric_from_time" /></div>
+    <div class="field_description"><label for="metric_to_time">Zeit ende</label></div>
+    <div class="field_inputs"><input type="date" name="metric_to_date" /><input type="time" step="any" name="metric_to_time" id="metric_to_time" /></div>
+    <div class="field_description"><label for="metric_preset_selection">Preset-Auswahl</label></div>
+    <div class="field_inputs"><select id="metric_preset_selection" size="1"></select></div>
+    <div class="cleaner"> &nbsp; </div>
+    <div class="metric_names">
+      &nbsp;
+    </div>
+    <div class="cleaner"> &nbsp; </div>
+    <div class="field_description"><label for="metric_request_every_that_many_pixels">Alle x Pixel Wert anfordern</label></div>
+    <div class="field_inputs"><input type="number" name="metric_request_every_that_many_pixels" id="metric_request_every_that_many_pixels" size="10" value="40" min="20" max="1000" /></div>
+    <div class="cleaner"> &nbsp; </div>
+    <button onclick="submitMetricName()">Fetch</button>
   </div>
-  <div class="cleaner"> &nbsp; </div>
-  <div class="field_description"><label for="metric_request_every_that_many_pixels">Alle x Pixel Wert anfordern</label></div>
-  <div class="field_inputs"><input type="number" name="metric_request_every_that_many_pixels" id="metric_request_every_that_many_pixels" size="10" value="40" min="20" max="1000" /></div>
-  <div class="cleaner"> &nbsp; </div>
-  <button onclick="submitMetricName()">Fetch</button>
-</div>
-<div class="style_options_wrapper">
+  <div class="style_options_wrapper">
+  </div>
 </div>
 <div class="master_wrapper">
 </div>

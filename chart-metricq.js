@@ -66,7 +66,7 @@ function initializeStyleOptions()
   {
     stylingOptions.list = JSON.parse(localStorage.getItem("styling"));
   }
-  stylingTabs = new Tabbing(document.querySelector(".style_options_wrapper"), ["50em", "14em"]);
+  stylingTabs = new Tabbing(document.querySelector(".style_options_wrapper"), undefined);
   var curTab, textareaEle;
   for(var i = 0; i < stylingOptions.list.length; ++i)
   {

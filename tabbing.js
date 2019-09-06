@@ -16,12 +16,18 @@ function Tabbing(paramParentElement, paramTabSize)
     this.headArea.setAttribute("class", "tabbing_header");
     this.headArea.style.fontSize = "14pt";
     this.headArea.style.height = "40px";
-    this.headArea.style.width = this.tabSize[0];
+    if(this.tabSize && this.tabSize[0])
+    {
+      this.headArea.style.width = this.tabSize[0];
+    }
     this.headArea.style.padding = "10px 0px 0px 0px";
     this.bodyArea = document.createElement("div");
     this.bodyArea.setAttribute("class", "tabbing_body");
-    this.bodyArea.style.width = this.tabSize[0];
-    this.bodyArea.style.height = this.tabSize[1];
+    if(this.tabSize)
+    {
+      if(this.tabSize[0]) this.bodyArea.style.width = this.tabSize[0];
+      if(this.tabSize[1]) this.bodyArea.style.height = this.tabSize[1];
+    }
     this.headArea = this.parentElement.appendChild(this.headArea);
     this.bodyArea = this.parentElement.appendChild(this.bodyArea);
   };
