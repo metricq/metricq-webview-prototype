@@ -37,6 +37,15 @@ var stylingOptions = {
       alpha: 1
     },
     {
+      nameRegex: "series:[^/]+/(raw)",
+      title: "Raw Series",
+      skip: false,
+      color: "default",
+      connect: "none",
+      width: 8,
+      dots: true,
+    },
+    {
       nameRegex: "band:.*",
       title: "All Bands",
       connect: "next",
@@ -64,7 +73,26 @@ function initializeStyleOptions()
 {
   if(localStorage.getItem("styling"))
   {
-    stylingOptions.list = JSON.parse(localStorage.getItem("styling"));
+    storedList = JSON.parse(localStorage.getItem("styling"));
+    var resultingList = stylingOptions.list;
+    for(var i = 0; i < storedList.length; ++i)
+    {
+      var foundSameTitle = false;
+      for(var j = 0; j < resultingList.length; ++j)
+      {
+        if(resultingList[j].title == storedList[i].title)
+        {
+          resultingList[j] = storedList[i];
+          foundSameTitle = true;
+          break;
+        }
+      }
+      if(!foundSameTitle)
+      {
+        resultingList.push(storedList[i]);
+      }
+    }
+    stylingOptions.list = resultingList;
   }
   stylingTabs = new Tabbing(document.querySelector(".style_options_wrapper"), undefined);
   var curTab, textareaEle;
