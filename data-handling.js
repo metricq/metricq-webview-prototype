@@ -2,7 +2,7 @@
 function DataCache()
 {
   this.metrics = new Array();
-  this.processMetricQDatapoints = function(datapointsJSON)
+  this.processMetricQDatapoints = function(datapointsJSON, doDraw, doResize)
   {
     console.log(datapointsJSON);
     timers.parsing.preprocessingEnded = (new Date()).getTime();
@@ -17,88 +17,27 @@ function DataCache()
         metricCountIndex = i;
       } else
       {
-        var mySeries = this.getSeries(metric.target);
-        if(mySeries)
-        {
-          mySeries.clear();
-          mySeries.styleOptions = defaultSeriesStyling(metric.target);
-        } else
-        {
-          mySeries = mainGraticule.addSeries(metric.target, defaultSeriesStyling(metric.target));
-        }
-        for(var j = 0; j < metric.datapoints.length; ++j)
-        {
-          mySeries.addPoint(new Point(metric.datapoints[j][1], metric.datapoints[j][0]), true);
-        }
+        this.newSeries(metricParts[0], metricParts[1]).parseDatapoints(metric.datapoints);
       }
       if("raw" == metricParts[1])
       {
-        mainGraticule.clearSeriesesMatchingRegex(new RegExp(metricParts[0].replace(/\\./g, "\\.") + "/(min|max|avg|count)"));
+        this.getMetricCache(metricParts[0]).clearNonRawAggregates();
       } else if ("avg" == metricParts[1])
       {
-        mainGraticule.clearSeriesesMatchingRegex(new RegExp(metricParts[0].replace(/\\./g, "\\.") + "/(raw)"));
+        this.getMetricCache(metricParts[0]).clearRawAggregate();
       }
-      if(1 < metricParts.length)
+      if(undefined === distinctMetrics[metricParts[0]])
       {
-        if(undefined === distinctMetrics[metricParts[0]])
-        {
-          distinctMetrics[metricParts[0]] = new Object();
-        }
-        if("count" == metricParts[1])
-        {
-          distinctMetrics[metricParts[0]][metricParts[1]] = true;
-        } else
-        {
-          distinctMetrics[metricParts[0]][metricParts[1]] = mainGraticule.getSeriesIndex(metric.target);
-        }
+        distinctMetrics[metricParts[0]] = this.getMetricCache(metricParts[0]);
       }
     }
+    
     for(var curMetricBase in distinctMetrics)
     {
-      if(undefined !== distinctMetrics[curMetricBase].min && undefined !== distinctMetrics[curMetricBase].max)
+      distinctMetrics[curMetricBase].generateBand();
+      if(undefined !== metricCountIndex)
       {
-        var curBand = mainGraticule.getBand(curMetricBase);
-        if(curBand)
-        {
-          curBand.clear();
-          curBand.styleOptions = defaultBandStyling(curMetricBase);
-        } else
-        {
-          curBand = mainGraticule.addBand(curMetricBase, defaultBandStyling(curMetricBase));
-        }
-  
-        var minSeries = mainGraticule.getSeries(distinctMetrics[curMetricBase].min);
-        for(var i = 0; i < minSeries.points.length; ++i)
-        {
-          curBand.addPoint(minSeries.points[i].clone());
-        }
-        var maxSeries = mainGraticule.getSeries(distinctMetrics[curMetricBase].max);
-        for(var i = maxSeries.points.length - 1; i >= 0; --i)
-        {
-          curBand.addPoint(maxSeries.points[i].clone());
-        }
-      }
-      if(undefined !== distinctMetrics[curMetricBase].count)
-      {
-        for(var i = 0; i < mainGraticule.series.length; ++i)
-        {
-          if(mainGraticule.series[i].name.match(new RegExp("^" + curMetricBase + "/([a-zA-Z]+)")))
-          {
-            if(mainGraticule.series[i].points.length == datapointsJSON[metricCountIndex].datapoints.length)
-            {
-              for(var j = 0; j < mainGraticule.series[i].points.length && j < datapointsJSON[metricCountIndex].datapoints.length; ++j)
-              {
-                mainGraticule.series[i].points[j].count = datapointsJSON[metricCountIndex].datapoints[j][0];
-              }
-            } else
-            {
-              if(0 < mainGraticule.series[i].points.length)
-              {
-                console.log("Number of series \"" + mainGraticule.series[i].name + "\" points (" + mainGraticule.series[i].points.length  + ") does not correspond with number of counts (" + datapointsJSON[metricCountIndex].length + ")!");
-              }
-            }
-          }
-        }
+        distinctMetrics[curMetricBase].parseCountDatapoints(datapointsJSON[metricCountIndex]);
       }
     }
     timers.parsing.end = (new Date()).getTime();
@@ -115,7 +54,42 @@ function DataCache()
   }
   this.newSeries = function(metricName, metricAggregate)
   {
-    
+    var relatedMetric = this.assureMetricExists(metricName);
+    if(relatedMetric.series[metricAggregate])
+    {
+      relatedMetric.series[metricAggregate].clear();
+      return relatedMetric.series[metricAggregate];
+    } else
+    {
+      var newSeries = new Series(metricAggregate, defaultSeriesStyling(metricName, metricAggregate));
+      relatedMetric.series[metricAggregate] = newSeries;
+      return newSeries;
+    }
+  }
+  this.newBand = function(metricName)
+  {
+    var foundMetric = this.getMetricCache(metricName);
+    if(foundMetric)
+    {
+      foundMetric.generateBand();
+      return foundMetric.band;
+    } else
+    {
+      return undefined;
+    }
+  }
+  this.assureMetricExists = function(metricName)
+  {
+    var foundMetric = this.getMetricCache(metricName);
+    if(foundMetric)
+    {
+      return foundMetric;
+    } else
+    {
+      var newMetric = new MetricCache(metricName);
+      this.metrics.push(newMetric);
+      return newMetric;
+    }
   }
   this.getMetricCache = function(metricName)
   {
@@ -127,6 +101,130 @@ function DataCache()
       }
     }
     return undefined;
+  }
+  this.getTimeRange = function()
+  {
+    var min = undefined,
+        max = undefined;
+    for(var i = 0; i < this.metrics.length; ++i)
+    {
+      for(var curAggregate in this.metrics[i].series)
+      {
+        if(this.metrics[i].series[curAggregate])
+        {
+          var curTimeRange = this.metrics[i].series[curAggregate].getTimeRange();
+          if(undefined === min)
+          {
+            min = curTimeRange[0];
+            max = curTimeRange[1];
+          } else
+          {
+            if(min > curTimeRange[0])
+            {
+              min = curTimeRange[0];
+            }
+            if(max < curTimeRange[1])
+            {
+              max = curTimeRange[1];
+            }
+          }
+        }
+      }
+    }
+    return [min, max];
+  }
+  this.getValueRange = function()
+  {
+    var min = undefined,
+        max = undefined;
+    for(var i = 0; i < this.metrics.length; ++i)
+    {
+      for(var curAggregate in this.metrics[i].series)
+      {
+        if(this.metrics[i].series[curAggregate])
+        {
+          var curTimeRange = this.metrics[i].series[curAggregate].getValueRange();
+          if(undefined === min)
+          {
+            min = curTimeRange[0];
+            max = curTimeRange[1];
+          } else
+          {
+            if(min > curTimeRange[0])
+            {
+              min = curTimeRange[0];
+            }
+            if(max < curTimeRange[1])
+            {
+              max = curTimeRange[1];
+            }
+          }
+        }
+      }
+    }
+    return [min, max];
+  }
+  this.hasSeriesToPlot = function()
+  {
+    for(var i = 0; i < this.metrics.length; ++i)
+    {
+      for(var curAggregate in this.metrics[i].series)
+      {
+        if(this.metrics[i].series[curAggregate] && 0 < this.metrics[i].series[curAggregate].points.length)
+        {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  this.hasBandToPlot = function()
+  {
+    for(var i = 0; i < this.metrics.length; ++i)
+    {
+      if(this.metrics[i].band && 0 < this.metrics[i].band.points.length)
+      {
+        return true;
+      }
+    }
+    return false;
+  }
+  this.updateStyling = function()
+  {
+    for(var i = 0; i < this.metrics.length; ++i)
+    {
+      for(var curAggregate in this.metrics[i].series)
+      {
+        if(this.metrics[i].series[curAggregate])
+        {
+          this.metrics[i].series[curAggregate].styleOptions = defaultSeriesStyling(this.metrics[i].name, curAggregate);
+        }
+      }
+      this.metrics[i].band = defaultBandStyling(this.metrics[i].name);
+    }
+  }
+  this.getAllValuesAtTime = function(timeAt)
+  {
+    var valueArr = new Array();
+    for(var i = 0; i < this.metrics.length; ++i)
+    {
+      for(var curAggregate in this.metrics[i].series)
+      {
+        if(this.metrics[i].series[curAggregate] && 0 < this.metrics[i].series[curAggregate].points.length)
+        {
+          var result = this.metrics[i].series[curAggregate].getValueAtTimeAndIndex(timeAt);
+          if(result)
+          {
+            valueArr.push([
+              result[0],
+              this.metrics[i].name,
+              curAggregate
+            ]);
+          }
+        }
+      }
+    }
+    return valueArr;
   }
 /* 
   this.addSeries = function(seriesName, styleOptions)
@@ -147,7 +245,10 @@ function DataCache()
 function MetricCache(paramMetricName)
 {
   this.name = paramMetricName;
-  this.series = new Array();
+  this.series = {"min": undefined,
+                 "max": undefined,
+                 "avg": undefined,
+                 "raw": undefined};
   this.band = undefined;
   this.resetData = function()
   {
@@ -155,6 +256,55 @@ function MetricCache(paramMetricName)
     delete this.bands;
     this.series = new Array();
     this.bands = new Array();
+  }
+  this.clearNonRawAggregates = function()
+  {
+    for(var curAggregate in this.series)
+    {
+      if("raw" != curAggregate && this.series[curAggregate])
+      {
+        this.series[curAggregate].clear();
+      }
+    }
+    if(this.band)
+    {
+      this.band.clear();
+    }
+  }
+  this.clearRawAggregate = function()
+  {
+    if(this.series["raw"])
+    {
+      this.series["raw"].clear();
+    }
+  }
+  this.generateBand = function()
+  {
+    if(this.band)
+    {
+      this.band.clear();
+    } else
+    {
+      this.band = new Band(defaultBandStyling(this.name));
+    }
+    if(this.series["min"] && this.series["max"])
+    {
+      var minSeries = this.series["min"];
+      for(var i = 0; i < minSeries.points.length; ++i)
+      {
+        this.band.addPoint(minSeries.points[i].clone());
+      }
+      this.band.switchOverIndex = this.band.points.length;
+      var maxSeries = this.series["max"];
+      for(var i = maxSeries.points.length - 1; i >= 0; --i)
+      {
+        this.band.addPoint(maxSeries.points[i].clone());
+      }
+      return this.band;
+    } else
+    {
+      return undefined;
+    }
   }
   this.clearSeries = function(seriesSpecifier)
   {
@@ -166,16 +316,24 @@ function MetricCache(paramMetricName)
     }
     return undefined;
   };
-  this.clearSeriesesMatchingRegex = function(matchRegex)
+  this.parseCountDatapoints = function(countDatapoints)
   {
-    for(var i = 0; i < this.series.length; ++i)
+    for(var curAggregate in this.series)
     {
-      if(this.series[i].name.match(matchRegex))
+      var curSeries = this.series[curAggregate];
+      if(curSeries && 0 < curSeries.points.length)
       {
-        this.series[i].clear();
+        if(curSeries.points.length == countDatapoints.length)
+        {
+          for(var j = 0; j < curSeries.points.length && j < countDatapoints.length; ++j)
+          {
+            curSeries.points[j].count = countDatapoints[j][0];
+          }
+        }
       }
     }
   }
+/*
   this.getSeriesIndex = function(seriesSpecifier)
   {
     for(var i = 0; i < this.series.length; ++i)
@@ -201,7 +359,6 @@ function MetricCache(paramMetricName)
     }
     return undefined;
   };
-/*
   this.getBand = function(bandSpecifier)
   {
     if("number" == (typeof bandSpecifier))
@@ -226,11 +383,11 @@ function MetricCache(paramMetricName)
 }
 
 
-function Band(paramName, paramStyleOptions)
+function Band(paramStyleOptions)
 {
   this.points = new Array();
-  this.name = paramName;
   this.styleOptions = paramStyleOptions;
+  this.switchOverIndex = 0;
   this.addPoint = function (newPoint)
   {
     this.points.push(newPoint);
@@ -271,10 +428,10 @@ function Band(paramName, paramStyleOptions)
     this.points = new Array();
   };
 }
-function Series(paramName, paramStyleOptions)
+function Series(paramAggregate, paramStyleOptions)
 {
   this.points = new Array();
-  this.name = paramName;
+  this.aggregate = paramAggregate;
   this.styleOptions = paramStyleOptions;
   this.clear = function ()
   {
@@ -398,6 +555,13 @@ function Series(paramName, paramStyleOptions)
       }
     }
     return newPoint;
+  }
+  this.parseDatapoints = function(metricDatapoints)
+  {
+    for(var i = 0; i < metricDatapoints.length; ++i)
+    {
+      this.addPoint(new Point(metricDatapoints[i][1], metricDatapoints[i][0]), true);
+    }
   }
   this.getTimeRange = function()
   {

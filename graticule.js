@@ -9,93 +9,13 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
   this.pixelsLeft = paramPixelsLeft;
   this.pixelsBottom = paramPixelsBottom;
   this.clearSize = paramClearSize;
-  this.series = new Array();
-  this.bands = new Array();
   this.lastRangeChangeTime = 0;
+  this.data = new DataCache();
   this.resetData = function()
   {
-    delete this.series;
-    delete this.bands;
-    this.series = new Array();
-    this.bands = new Array();
+    delete this.data;
+    this.data = new DataCache();
   }
-  this.clearSeries = function(seriesSpecifier)
-  {
-    var curSeries = this.getSeries(seriesSpecifier);
-    if(curSeries)
-    {
-      curSeries.clear();
-      return curSeries;
-    }
-    return undefined;
-  };
-  this.clearSeriesesMatchingRegex = function(matchRegex)
-  {
-    for(var i = 0; i < this.series.length; ++i)
-    {
-      if(this.series[i].name.match(matchRegex))
-      {
-        this.series[i].clear();
-      }
-    }
-  }
-  this.getSeriesIndex = function(seriesSpecifier)
-  {
-    for(var i = 0; i < this.series.length; ++i)
-    {
-      if(seriesSpecifier === this.series[i].name)
-      {
-        return i;
-      }
-    }
-    return undefined;
-  };
-  this.getSeries = function(seriesSpecifier)
-  {
-    if("number" == (typeof seriesSpecifier))
-    {
-      if((0 <= seriesSpecifier) && (this.series.length > seriesSpecifier))
-      {
-        return this.series[seriesSpecifier];
-      }
-    } else
-    {
-      return this.series[this.getSeriesIndex(seriesSpecifier)];
-    }
-    return undefined;
-  };
-  this.getBand = function(bandSpecifier)
-  {
-    if("number" == (typeof bandSpecifier))
-    {
-      if((0 <= bandSpecifier) && (this.bands.length > bandSpecifier))
-      {
-        return this.bands[bandSpecifier];
-      }
-    } else
-    {
-      for(var i = 0; i < this.bands.length; ++i)
-      {
-        if(bandSpecifier === this.bands[i].name)
-        {
-          return this.bands[i];
-        }
-      }
-    }
-    return undefined;
-  }
-  this.addSeries = function(seriesName, styleOptions)
-  {
-    var newSeries = new Series(seriesName, styleOptions);
-    this.series.push(newSeries);
-    return newSeries;
-  };
-  this.addBand = function(bandName, styleOptions)
-  {
-    var newBand = new Band(bandName, styleOptions);
-    this.bands.push(newBand);
-    return newBand;
-  };
   this.figureOutTimeSteps = function(maxStepsAllowed)
   {
     var startTime = new Date(this.curTimeRange[0]);
@@ -454,7 +374,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
   };
   this.draw = function(adjustRanges)
   {
-    if(0 == this.series.length)
+    if(!this.data.hasSeriesToPlot() && !this.data.hasBandToPlot())
     {
       console.log("No series to plot");
       return;
@@ -740,89 +660,23 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
   };
   this.drawBands = function(timeRange, valueRange, timePerPixel, valuesPerPixel)
   {
-    for(var i = 0; i < this.bands.length; ++i)
+    for(var i = 0; i < this.data.metrics.length; ++i)
     {
-      var styleOptions = this.parseStyleOptions(this.bands[i].styleOptions);
-      if(styleOptions.skip)
+      var curBand = this.data.metrics[i].band;
+      if(curBand)
       {
-        this.resetCtx();
-        continue;
-      }
-     
-      var switchOverIndex = Math.floor(this.bands[i].points.length / 2) + 1; 
-      for(var j = 0,x,y,previousX,previousY; j < this.bands[i].points.length; ++j)
-      {
-        x = this.graticuleDimensions[0] + Math.round((this.bands[i].points[j].time - timeRange[0]) / timePerPixel);
-        y = this.graticuleDimensions[1] + (this.graticuleDimensions[3] - Math.round((this.bands[i].points[j].value - valueRange[0]) / valuesPerPixel));
-        if(0 == j)
+        var styleOptions = this.parseStyleOptions(curBand.styleOptions);
+        if(styleOptions.skip || 0 == curBand.points.length)
         {
-          this.ctx.beginPath();
-          this.ctx.moveTo(x, y);
-        } else
-        {
-          // connect direct
-          if(1 == styleOptions.connect)
-          {
-            this.ctx.lineTo(x,y);
-          } else
-          {
-            if(j < switchOverIndex)
-            {
-              // connect last
-              if(2 == styleOptions.connect)
-              {
-                this.ctx.lineTo(previousX, y);
-                this.ctx.lineTo(x, y);
-              // connect next
-              } else if(3 == styleOptions.connect)
-              {
-                this.ctx.lineTo(x, previousY);
-                this.ctx.lineTo(x, y);
-              }
-            } else
-            {
-              // connect last
-              if(2 == styleOptions.connect)
-              {
-                this.ctx.lineTo(x, previousY);
-                this.ctx.lineTo(x, y);
-              // connext next
-              } else if(3 == styleOptions.connect)
-              {
-                this.ctx.lineTo(previousX, y);
-                this.ctx.lineTo(x, y);
-              }
-            }
-          }
+          this.resetCtx();
+          continue;
         }
-        previousX = x;
-        previousY = y;
-      }
-      if(0 < this.bands[i].points.length)
-      {
-        this.ctx.closePath();
-        this.ctx.fill();
-      }
-      this.resetCtx();
-    }
-  }
-  this.drawSeries = function(timeRange, valueRange, timePerPixel, valuesPerPixel)
-  {
-    for(var i = 0; i < this.series.length; ++i)
-    {
-      var styleOptions = this.parseStyleOptions(this.series[i].styleOptions);
-      if(styleOptions.skip)
-      {
-        this.resetCtx();
-        continue;
-      }
-      
-      for(var j = 0,x,y,previousX,previousY; j < this.series[i].points.length; ++j)
-      {
-        x = this.graticuleDimensions[0] + Math.round((this.series[i].points[j].time - timeRange[0]) / timePerPixel);
-        y = this.graticuleDimensions[1] + (this.graticuleDimensions[3] - Math.round((this.series[i].points[j].value - valueRange[0]) / valuesPerPixel));
-        if(0 < styleOptions.connect)
+       
+        var switchOverIndex = curBand.switchOverIndex;
+        for(var j = 0,x,y,previousX,previousY; j < curBand.points.length; ++j)
         {
+          x = this.graticuleDimensions[0] + Math.round((curBand.points[j].time - timeRange[0]) / timePerPixel);
+          y = this.graticuleDimensions[1] + (this.graticuleDimensions[3] - Math.round((curBand.points[j].value - valueRange[0]) / valuesPerPixel));
           if(0 == j)
           {
             this.ctx.beginPath();
@@ -832,34 +686,108 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
             // connect direct
             if(1 == styleOptions.connect)
             {
-              this.ctx.lineTo(x, y);
-            // connect last
-            } else if(2 == styleOptions.connect)
+              this.ctx.lineTo(x,y);
+            } else
             {
-              this.ctx.lineTo(previousX,y);
-              this.ctx.lineTo(x, y);
-            // connect next
-            } else if(3 == styleOptions.connect)
-            {
-              this.ctx.lineTo(x, previousY);
-              this.ctx.lineTo(x, y);
+              if(j < switchOverIndex)
+              {
+                // connect last
+                if(2 == styleOptions.connect)
+                {
+                  this.ctx.lineTo(previousX, y);
+                  this.ctx.lineTo(x, y);
+                // connect next
+                } else if(3 == styleOptions.connect)
+                {
+                  this.ctx.lineTo(x, previousY);
+                  this.ctx.lineTo(x, y);
+                }
+              } else
+              {
+                // connect last
+                if(2 == styleOptions.connect)
+                {
+                  this.ctx.lineTo(x, previousY);
+                  this.ctx.lineTo(x, y);
+                // connext next
+                } else if(3 == styleOptions.connect)
+                {
+                  this.ctx.lineTo(previousX, y);
+                  this.ctx.lineTo(x, y);
+                }
+              }
             }
           }
+          previousX = x;
+          previousY = y;
         }
-        if(1 == this.series[i].points[j].count || (styleOptions.drawDots && 0 != this.series[i].points[j].count))
-        {
-          this.ctx.fillRect(x - styleOptions.halfPointWidth, y - styleOptions.halfPointWidth, styleOptions.pointWidth, styleOptions.pointWidth);
-        }
-        previousX = x;
-        previousY = y;
-      }
-      if(0 < styleOptions.connect)
-      {
-        this.ctx.stroke();
         this.ctx.closePath();
+        this.ctx.fill();
+        this.resetCtx();
       }
-      // reset ctx style options
-      this.resetCtx();
+    }
+  }
+  this.drawSeries = function(timeRange, valueRange, timePerPixel, valuesPerPixel)
+  {
+    for(var i = 0; i < this.data.metrics.length; ++i)
+    {
+      for(var curAggregate in this.data.metrics[i].series)
+      {
+        var curSeries = this.data.metrics[i].series[curAggregate];
+        if(curSeries)
+        {
+          var styleOptions = this.parseStyleOptions(curSeries.styleOptions);
+          if(styleOptions.skip || 0 == curSeries.points.length)
+          {
+            this.resetCtx();
+            continue;
+          }
+          
+          for(var j = 0,x,y,previousX,previousY; j < curSeries.points.length; ++j)
+          {
+            x = this.graticuleDimensions[0] + Math.round((curSeries.points[j].time - timeRange[0]) / timePerPixel);
+            y = this.graticuleDimensions[1] + (this.graticuleDimensions[3] - Math.round((curSeries.points[j].value - valueRange[0]) / valuesPerPixel));
+            if(0 < styleOptions.connect)
+            {
+              if(0 == j)
+              {
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, y);
+              } else
+              {
+                // connect direct
+                if(1 == styleOptions.connect)
+                {
+                  this.ctx.lineTo(x, y);
+                // connect last
+                } else if(2 == styleOptions.connect)
+                {
+                  this.ctx.lineTo(previousX,y);
+                  this.ctx.lineTo(x, y);
+                // connect next
+                } else if(3 == styleOptions.connect)
+                {
+                  this.ctx.lineTo(x, previousY);
+                  this.ctx.lineTo(x, y);
+                }
+              }
+            }
+            if(1 == curSeries.points[j].count || (styleOptions.drawDots && 0 != curSeries.points[j].count))
+            {
+              this.ctx.fillRect(x - styleOptions.halfPointWidth, y - styleOptions.halfPointWidth, styleOptions.pointWidth, styleOptions.pointWidth);
+            }
+            previousX = x;
+            previousY = y;
+          }
+          if(0 < styleOptions.connect)
+          {
+            this.ctx.stroke();
+            this.ctx.closePath();
+          }
+          // reset ctx style options
+          this.resetCtx();
+        }
+      }
     }
   };
   this.resetCtx = function()
@@ -869,286 +797,19 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
   };
   this.figureOutTimeRange = function ()
   {
-    if(0 == this.series.length)
-    {
-       return [0,0];
-    }
-    var timeRange = this.series[0].getTimeRange();
-    for(var i = 1; i < this.series.length; ++i)
-    {
-      var curRange = this.series[i].getTimeRange();
-      if(curRange[0] < timeRange[0])
-      {
-        timeRange[0] = curRange[0];
-      }
-      if(curRange[1] > timeRange[1])
-      {
-        timeRange[1] = curRange[1];
-      }
-    }
-    for(var i = 1; i < this.bands.length; ++i)
-    {
-      var curRange = this.bands[i].getTimeRange();
-      if(curRange[0] < timeRange[0])
-      {
-        timeRange[0] = curRange[0];
-      }
-      if(curRange[1] > timeRange[1])
-      {
-        timeRange[1] = curRange[1];
-      }
-    }
-    return timeRange;
+    return this.data.getTimeRange();
   };
   this.figureOutValueRange = function ()
   {
-    if(0 == this.series.length)
+    var valueRange = this.data.getValueRange();
+    if(undefined !== valueRange[0])
     {
-       return [0,0];
+      // add wiggle room
+      valueRange[0] *= 0.9;
+      valueRange[1] *= 1.1;
     }
-    var valueRange = this.series[0].getValueRange();
-    for(var i = 1; i < this.series.length; ++i)
-    {
-      var curRange = this.series[i].getValueRange();
-      if(curRange[0] < valueRange[0])
-      {
-        valueRange[0] = curRange[0];
-      }
-      if(curRange[1] > valueRange[1])
-      {
-        valueRange[1] = curRange[1];
-      }
-    }
-    for(var i = 1; i < this.bands.length; ++i)
-    {
-      var curRange = this.bands[i].getValueRange();
-      if(curRange[0] < valueRange[0])
-      {
-        valueRange[0] = curRange[0];
-      }
-      if(curRange[1] > valueRange[1])
-      {
-        valueRange[1] = curRange[1];
-      }
-    }
-    // add wiggle room
-    valueRange[0] *= 0.9;
-    valueRange[1] *= 1.1;
     return valueRange;
   };
-}
-function Band(paramName, paramStyleOptions)
-{
-  this.points = new Array();
-  this.name = paramName;
-  this.styleOptions = paramStyleOptions;
-  this.addPoint = function (newPoint)
-  {
-    this.points.push(newPoint);
-    return newPoint;
-  }
-  this.getTimeRange = function()
-  {
-    if(0 == this.points.length)
-    {
-      return [0, 0];
-    } else
-    {
-      return [this.points[0].time, this.points[this.points.length - 1].time];
-    }
-  }
-  this.getValueRange = function()
-  {
-    if(0 == this.points.length)
-    {
-      return [0, 0];
-    }
-    var min = this.points[0].value, max = this.points[0].value;
-    for(var i = 1; i < this.points.length; ++i)
-    {
-      if(this.points[i].value < min)
-      {
-        min = this.points[i].value;
-      } else if(this.points[i].value > max)
-      {
-        max = this.points[i].value;
-      }
-    }
-    return [min, max];
-  }
-  this.clear = function ()
-  {
-    delete this.points;
-    this.points = new Array();
-  };
-}
-function Series(paramName, paramStyleOptions)
-{
-  this.points = new Array();
-  this.name = paramName;
-  this.styleOptions = paramStyleOptions;
-  this.clear = function ()
-  {
-    delete this.points;
-    this.points = new Array();
-  };
-  this.getValueAtTimeAndIndex = function(timeAt)
-  {
-    if("number" !== typeof timeAt || 0 == this.points.length)
-    {
-      return;
-    }
-    var middleIndex = undefined;
-    var bottomIndex = 0
-    var headIndex   = this.points.length - 1;
-    while(10 < (headIndex - bottomIndex))
-    {
-      middleIndex = bottomIndex + Math.floor((headIndex - bottomIndex) / 2);
-      if(this.points[middleIndex].time < timeAt)
-      {
-        bottomIndex = middleIndex;
-      } else
-      {
-        headIndex = middleIndex;
-      }
-    }
-    var i = bottomIndex;
-    var closestIndex = bottomIndex;
-    var closestDelta = 99999999999999;
-    for(; i <= headIndex; ++i)
-    {
-      var curDelta = Math.abs(this.points[i].time - timeAt);
-      if(curDelta < closestDelta)
-      {
-        closestDelta = curDelta;
-        closestIndex = i;
-      }
-    }
-    var closestPointIndex = closestIndex;
-    if(this.points[closestPointIndex].time !== timeAt
-    && this.styleOptions && this.styleOptions.connect && "none" != this.styleOptions.connect)
-    {
-      var betterIndex = closestPointIndex;
-      if("next" == this.styleOptions.connect)
-      {
-        if(this.points[betterIndex].time > timeAt)
-        {
-          --betterIndex;
-        }
-      } else if ("last" == this.styleOptions.connect)
-      {
-        if(this.points[betterIndex].time < timeAt)
-        {
-          ++betterIndex;
-        }
-      } else if("direct" == this.styleOptions.connect)
-      {
-        var firstPoint, secondPoint;
-        if((timeAt < this.points[betterIndex].time && 0 > betterIndex) || (betterIndex + 1) >= this.points.length)
-        {
-          firstPoint = this.points[betterIndex - 1];
-          secondPoint = this.points[betterIndex];
-        } else
-        {
-          firstPoint = this.points[betterIndex];
-          secondPoint = this.points[betterIndex + 1]
-        }
-        var timeDelta = secondPoint.time - firstPoint.time;
-        var valueDelta = secondPoint.value - firstPoint.value;
-        return [firstPoint.value + valueDelta * ((timeAt - firstPoint.time) / timeDelta), betterIndex];
-      }
-      if(0 > betterIndex)
-      {
-        betterIndex = 0;
-      } else if(betterIndex >= this.points.length)
-      {
-        betterIndex = this.points.length - 1;
-      }
-      return [this.points[betterIndex].value, betterIndex];
-    } else
-    {
-      return [this.points[closestPointIndex].value, betterIndex];
-    }
-  };
-  this.addPoint = function (newPoint, isBigger) {
-    if(isBigger || 0 == this.points.length)
-    {
-      this.points.push(newPoint);
-      return newPoint;
-    } else
-    {
-      var middleIndex = undefined,
-          bottom = 0
-          head = this.points.length - 1;
-      // binary search, where to insert the new point
-      while(10 < (head - bottom))
-      {
-        middleIndex = bottom + Math.floor((head - bottom) / 2);
-        if(this.points[middleIndex].time < newPoint.time)
-        {
-          bottom = middleIndex;
-        } else
-        {
-          head = middleIndex;
-        }
-      }
-      // for the remaining 10 elements binary search is too time intensive
-      var i;
-      for(i = bottom; i <= head; ++i)
-      {
-        if(this.points[i].time > newPoint.time)
-        {
-          this.points.splice(i, 0, [newPoint]);
-          break;
-        }
-      }
-      // if we could not insert the newPoint somewhere in between, put it at the end
-      if(i == (head + 1))
-      {
-        this.points.push(newPoint);
-      }
-    }
-    return newPoint;
-  }
-  this.getTimeRange = function()
-  {
-    if(0 == this.points.length)
-    {
-      return [0, 0];
-    } else
-    {
-      return [this.points[0].time, this.points[this.points.length - 1].time];
-    }
-  }
-  this.getValueRange = function()
-  {
-    if(0 == this.points.length)
-    {
-      return [0, 0];
-    }
-    var min = this.points[0].value, max = this.points[0].value;
-    for(var i = 1; i < this.points.length; ++i)
-    {
-      if(this.points[i].value < min)
-      {
-        min = this.points[i].value;
-      } else if(this.points[i].value > max)
-      {
-        max = this.points[i].value;
-      }
-    }
-    return [min, max];
-  }
-}
-function Point(paramTime, paramValue)
-{
-  this.time = paramTime;
-  this.value = paramValue;
-  this.count = undefined;
-  this.clone = function ()
-  {
-    return new Point(this.time, this.value);
-  }
 }
 function dateToHHMMStr(curDate)
 {
