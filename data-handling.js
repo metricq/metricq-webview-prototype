@@ -192,7 +192,7 @@ function DataCache()
           this.metrics[i].series[curAggregate].styleOptions = defaultSeriesStyling(this.metrics[i].name, curAggregate);
         }
       }
-      this.metrics[i].band = defaultBandStyling(this.metrics[i].name);
+      this.metrics[i].band.styleOptions = defaultBandStyling(this.metrics[i].name);
     }
   }
   this.getAllValuesAtTime = function(timeAt)
