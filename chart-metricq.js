@@ -803,6 +803,7 @@ function fetchMeasureData(timeStart, timeEnd, maxDataPoints, metricToFetch, call
     var timeDelta = timeEnd.getTime() - timeStart.getTime();
     timeStart = new Date(timeStart.getTime() - timeDelta);
     timeEnd = new Date(timeEnd.getTime() + timeDelta);
+    maxDataPoints *= 3;
   }
   var from = timeStart.toISOString();
   var to = timeEnd.toISOString();
