@@ -303,6 +303,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
     var relationalPos = [ positionArr[0] - this.graticuleDimensions[0],
                           positionArr[1] - this.graticuleDimensions[1]];
     if( undefined !== this.curTimeRange
+    &&  undefined !== this.curValueRange
     && relationalPos[0] >= 0
     && relationalPos[0] <= this.graticuleDimensions[2]
     && relationalPos[1] >= 0
