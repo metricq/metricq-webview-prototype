@@ -498,9 +498,11 @@ function Series(paramAggregate, paramStyleOptions)
       if(0 > betterIndex)
       {
         betterIndex = 0;
+        return undefined;
       } else if(betterIndex >= this.points.length)
       {
         betterIndex = this.points.length - 1;
+        return undefined;
       }
       return [this.points[betterIndex].value, betterIndex];
     } else

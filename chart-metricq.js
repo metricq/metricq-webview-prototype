@@ -341,7 +341,7 @@ function registerCallbacks()
       || mouseDown.previousPos[1] !== mouseDown.currentPos[1])
       {
         evtObj.preventDefault();
-        if(keyDown.is(16))
+        if(keyDown.is(16) || keyDown.is(17))
         {
           mainGraticule.moveTimeAndValueRanges( (mouseDown.currentPos[0] - mouseDown.previousPos[0]) * -1 * mainGraticule.curTimePerPixel, 0);
           setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 150);
@@ -399,7 +399,7 @@ function registerCallbacks()
   mouseDown.registerDropCallback(function(evtObj) {
     var relativeStart = mouseDown.relativeStartPos;
     var relativeEnd = calculateActualMousePos(evtObj);
-    if(!keyDown.is(16) && mainGraticule && mouseDown.startTarget && "CANVAS" === mouseDown.startTarget.tagName && 1 < Math.abs(relativeStart[0] - relativeEnd[0]))
+    if(!keyDown.is(16) && !keyDown.is(17) && mainGraticule && mouseDown.startTarget && "CANVAS" === mouseDown.startTarget.tagName && 1 < Math.abs(relativeStart[0] - relativeEnd[0]))
     {
       evtObj.preventDefault();
       var posEnd   = mainGraticule.getTimeValueAtPoint( relativeStart );
@@ -477,15 +477,15 @@ function registerCallbacks()
       metricsArray.sort(function (a,b) { return b[0] - a[0]; } );
       var posDate = new Date(curPoint[0]);
       var timeString = posDate.toLocaleString();
-      ctx.fillText(timeString, curPosOnCanvas[0] + 10, curPosOnCanvas[1] - 20);
+      ctx.fillText(timeString, curPosOnCanvas[0] + 10, 40 - 20);
       for(var i = 0; i < metricsArray.length; ++i)
       {
         ctx.fillStyle = determineColorForMetric(metricsArray[i][1]);
         ctx.globalAlpha = 0.4;
-        ctx.fillRect(curPosOnCanvas[0] + 10, curPosOnCanvas[1] + i * 20 - 15, maxTextWidth, 20);
+        ctx.fillRect(curPosOnCanvas[0] + 10, 40 + i * 20 - 15, maxTextWidth, 20);
         ctx.fillStyle = "#000000";
         ctx.globalAlpha = 1;
-        ctx.fillText(metricsArray[i][2], curPosOnCanvas[0] + 10, curPosOnCanvas[1] + i * 20);
+        ctx.fillText(metricsArray[i][2], curPosOnCanvas[0] + 10, 40 + i * 20);
       }
     }
   });
