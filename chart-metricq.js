@@ -9,7 +9,8 @@ var ajaxOpenRequests = new Array();
 var ajaxRequestIndex = 1;
 var lastStylingChangeTime = 0;
 var uiOptions = {
-  horizontalScrolling: false
+  horizontalScrolling: false,
+  smoothScrollingExtraData: true
 };
 var stylingOptions = {
   list: [
@@ -68,6 +69,15 @@ function init()
   {
     urlImport(location.href);
   }
+}
+function initTimers()
+{
+  timers = new Object();
+  timers.ajax = new Array();
+  timers.endpoint = new Array();
+  timers.db = new Array();
+  timers.db_http = new Array();
+  timers.parsing = new Array();
 }
 function initializeStyleOptions()
 {
@@ -552,6 +562,7 @@ function updateAllSeriesesBands(lastUpdateTime)
   }
   for(var curMetricBase in distinctMetrics)
   {
+    initTimers();
     fetchMeasureData(metricFrom, metricTo, calcMaxDataPoints(metricFrom, metricTo), curMetricBase, function(jsonObj) { mainGraticule.data.processMetricQDatapoints(jsonObj, false, false); });
   }
   setTimeout(allAjaxCompletedWatchdog, 30);
@@ -618,37 +629,43 @@ function showTimers()
 {
   var deltaTime = 0;
   var timingsString = "";
-  deltaTime = timers.ajax.done - timers.ajax.presend;
-  timingsString += "Ajax " + deltaTime + " ms";
 
-  if(timers.endpoint)
+  var cumulatedTimers = sumOfTimers(["ajax", "parsing", "endpoint", "db", "db_http"]);
+  var i = 0;
+  for(var timerName in cumulatedTimers)
   {
-    deltaTime = timers.endpoint.duration;
-    deltaTime = Math.round(deltaTime * 100) / 100;
-    timingsString += ", Endpoint " + deltaTime + " ms";
+    if(0 < i)
+    {
+      timingsString += ", ";
+    }
+    timingsString += timerName + " " + (new Number(cumulatedTimers[timerName])).toFixed(2) + " ms";
+    ++i;
   }
 
-  if(timers.db_http)
-  {
-    deltaTime = timers.db_http.duration;
-    deltaTime = Math.round(deltaTime * 100) / 100;
-    timingsString += ", Fetch " + deltaTime + " ms";
-  }
-
-  if(timers.db)
-  {
-    deltaTime = timers.db.duration;
-    deltaTime = Math.round(deltaTime * 100) / 100;
-    timingsString += ", DB " + deltaTime + " ms";
-  }
-  deltaTime = timers.parsing.end - timers.parsing.start;
-  timingsString += ", Parsing " + deltaTime + " ms";
   deltaTime = timers.drawing.end - timers.drawing.start;
   timingsString += ", Drawing " + deltaTime + " ms";
 
   var timingsEle = document.querySelectorAll(".timings_text")[0];
   timingsEle.removeChild(timingsEle.firstChild);
   timingsEle.appendChild(document.createTextNode(timingsString));
+}
+
+function sumOfTimers(timerNames)
+{
+  var cumulatedTimers = new Object();
+  for(var i = 0; i < timerNames.length; ++i)
+  {
+    if(timers[timerNames[i]])
+    {
+      var sum = 0;
+      for(var j = 0; j < timers[timerNames[i]].length; ++j)
+      {
+        sum += timers[timerNames[i]][j];
+      }
+      cumulatedTimers[timerNames[i]] = sum;
+    }
+  }
+  return cumulatedTimers;
 }
 
 function createChart()
@@ -756,6 +773,7 @@ function submitMetricName()
 function fetchAllMetricFields(metricFrom, metricTo)
 {
   var maxDataPoints = calcMaxDataPoints(metricFrom, metricTo);
+  initTimers();
   metricParams.onEachName(function(fromTime, toTime, countDataPoints) { return function(nameEle, nameValue)
   {
     if(0 < nameValue.length)
@@ -776,9 +794,12 @@ function fetchMeasureData(timeStart, timeEnd, maxDataPoints, metricToFetch, call
     return;
   }
   // Fetch some data outside for smooth scrolling
-  var timeDelta = timeEnd.getTime() - timeStart.getTime();
-  timeStart = new Date(timeStart.getTime() - timeDelta);
-  timeEnd = new Date(timeEnd.getTime() + timeDelta);
+  if(uiOptions.smoothScrollingExtraData)
+  {
+    var timeDelta = timeEnd.getTime() - timeStart.getTime();
+    timeStart = new Date(timeStart.getTime() - timeDelta);
+    timeEnd = new Date(timeEnd.getTime() + timeDelta);
+  }
   var from = timeStart.toISOString();
   var to = timeEnd.toISOString();
   var functions = [
@@ -797,33 +818,34 @@ function fetchMeasureData(timeStart, timeEnd, maxDataPoints, metricToFetch, call
   req.onreadystatechange = function (callMe) { return function(obj) {
     if(1 == obj.target.readyState)
     {
-      timers.ajax.opened = (new Date()).getTime();
+      obj.target.timers.ajax.opened = (new Date()).getTime();
     }
     if(4 == obj.target.readyState)
     {
-      timers.ajax.done = (new Date()).getTime();
+      obj.target.timers.ajax.done = (new Date()).getTime();
       var jsonObj;
-      timers.parsing = {
+      obj.target.timers.parsing = {
         start: (new Date()).getTime()
       };
-      timers.endpoint = { duration: 0};
+      obj.target.timers.endpoint = { duration: 0};
       let requestDuration = obj.target.getResponseHeader("x-request-duration");
       if (requestDuration !== null)
       {
-        timers.endpoint.duration = Number.parseFloat(requestDuration) * 1000;
+        obj.target.timers.endpoint.duration = Number.parseFloat(requestDuration) * 1000;
       }
+      obj.target.timers.parsing = { start: (new Date()).getTime() };
       try
       {
         jsonObj = JSON.parse(obj.target.responseText);
         if(jsonObj && jsonObj[0].time_measurements.db)
         {
-          timers.db = { duration: 0 };
-          timers.db.duration = jsonObj[0].time_measurements.db * 1000;
+          obj.target.timers.db = { duration: 0 };
+          obj.target.timers.db.duration = jsonObj[0].time_measurements.db * 1000;
         }
         if(jsonObj && jsonObj[0].time_measurements.http)
         {
-          timers.db_http = { duration: 0 };
-          timers.db_http.duration = jsonObj[0].time_measurements.http * 1000;
+          obj.target.timers.db_http = { duration: 0 };
+          obj.target.timers.db_http.duration = jsonObj[0].time_measurements.http * 1000;
         }
       } catch(exc)
       {
@@ -835,6 +857,7 @@ function fetchMeasureData(timeStart, timeEnd, maxDataPoints, metricToFetch, call
       {
         callMe(jsonObj);
       }
+      obj.target.timers.parsing.end = (new Date()).getTime();
       for(var i = 0; i < ajaxOpenRequests.length; ++i)
       {
         if(obj.target.requestId == ajaxOpenRequests[i])
@@ -843,9 +866,15 @@ function fetchMeasureData(timeStart, timeEnd, maxDataPoints, metricToFetch, call
           break;
         }
       }
+      timers.ajax.push(obj.target.timers.ajax.done - obj.target.timers.ajax.presend);
+      timers.endpoint.push(obj.target.timers.endpoint.duration);
+      timers.db.push(obj.target.timers.db.duration);
+      timers.db_http.push(obj.target.timers.db_http.duration);
+      timers.parsing.push(obj.target.timers.parsing.end - obj.target.timers.parsing.start);
     }
   };}(callbackFunc);
-  timers.ajax = {
+  req.timers = new Object();
+  req.timers.ajax = {
     presend: (new Date()).getTime()
   };
   var requestJson = {

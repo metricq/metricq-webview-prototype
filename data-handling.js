@@ -5,7 +5,6 @@ function DataCache()
   this.processMetricQDatapoints = function(datapointsJSON, doDraw, doResize)
   {
     console.log(datapointsJSON);
-    timers.parsing.preprocessingEnded = (new Date()).getTime();
     var distinctMetrics = new Object();
     var metricCountIndex = undefined;
     for(var i = 0; i < datapointsJSON.length; ++i)
@@ -40,17 +39,10 @@ function DataCache()
         distinctMetrics[curMetricBase].parseCountDatapoints(datapointsJSON[metricCountIndex]);
       }
     }
-    timers.parsing.end = (new Date()).getTime();
-    timers.drawing = {
-      start: (new Date()).getTime(),
-      end: 0
-    };
     if(doDraw)
     {
       mainGraticule.draw(doResize);
     }
-    timers.drawing.end = (new Date()).getTime();
-    showTimers();
   }
   this.newSeries = function(metricName, metricAggregate)
   {
