@@ -11,6 +11,12 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
   this.dataCache = new DataCache()
   this.clearSize = paramClearSize;
   this.lastRangeChangeTime = 0;
+  this.data = new DataCache();
+  this.resetData = function()
+  {
+    delete this.data;
+    this.data = new DataCache();
+  }
   this.figureOutTimeSteps = function(maxStepsAllowed)
   {
     var startTime = new Date(this.curTimeRange[0]);
@@ -369,7 +375,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
   };
   this.draw = function(adjustRanges)
   {
-    if(0 == this.series.length)
+    if(!this.data.hasSeriesToPlot() && !this.data.hasBandToPlot())
     {
       console.log("No series to plot");
       return;
@@ -655,89 +661,23 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
   };
   this.drawBands = function(timeRange, valueRange, timePerPixel, valuesPerPixel)
   {
-    for(var i = 0; i < this.bands.length; ++i)
+    for(var i = 0; i < this.data.metrics.length; ++i)
     {
-      var styleOptions = this.parseStyleOptions(this.bands[i].styleOptions);
-      if(styleOptions.skip)
+      var curBand = this.data.metrics[i].band;
+      if(curBand)
       {
-        this.resetCtx();
-        continue;
-      }
-     
-      var switchOverIndex = Math.floor(this.bands[i].points.length / 2) + 1; 
-      for(var j = 0,x,y,previousX,previousY; j < this.bands[i].points.length; ++j)
-      {
-        x = this.graticuleDimensions[0] + Math.round((this.bands[i].points[j].time - timeRange[0]) / timePerPixel);
-        y = this.graticuleDimensions[1] + (this.graticuleDimensions[3] - Math.round((this.bands[i].points[j].value - valueRange[0]) / valuesPerPixel));
-        if(0 == j)
+        var styleOptions = this.parseStyleOptions(curBand.styleOptions);
+        if(styleOptions.skip || 0 == curBand.points.length)
         {
-          this.ctx.beginPath();
-          this.ctx.moveTo(x, y);
-        } else
-        {
-          // connect direct
-          if(1 == styleOptions.connect)
-          {
-            this.ctx.lineTo(x,y);
-          } else
-          {
-            if(j < switchOverIndex)
-            {
-              // connect last
-              if(2 == styleOptions.connect)
-              {
-                this.ctx.lineTo(previousX, y);
-                this.ctx.lineTo(x, y);
-              // connect next
-              } else if(3 == styleOptions.connect)
-              {
-                this.ctx.lineTo(x, previousY);
-                this.ctx.lineTo(x, y);
-              }
-            } else
-            {
-              // connect last
-              if(2 == styleOptions.connect)
-              {
-                this.ctx.lineTo(x, previousY);
-                this.ctx.lineTo(x, y);
-              // connext next
-              } else if(3 == styleOptions.connect)
-              {
-                this.ctx.lineTo(previousX, y);
-                this.ctx.lineTo(x, y);
-              }
-            }
-          }
+          this.resetCtx();
+          continue;
         }
-        previousX = x;
-        previousY = y;
-      }
-      if(0 < this.bands[i].points.length)
-      {
-        this.ctx.closePath();
-        this.ctx.fill();
-      }
-      this.resetCtx();
-    }
-  }
-  this.drawSeries = function(timeRange, valueRange, timePerPixel, valuesPerPixel)
-  {
-    for(var i = 0; i < this.series.length; ++i)
-    {
-      var styleOptions = this.parseStyleOptions(this.series[i].styleOptions);
-      if(styleOptions.skip)
-      {
-        this.resetCtx();
-        continue;
-      }
-      
-      for(var j = 0,x,y,previousX,previousY; j < this.series[i].points.length; ++j)
-      {
-        x = this.graticuleDimensions[0] + Math.round((this.series[i].points[j].time - timeRange[0]) / timePerPixel);
-        y = this.graticuleDimensions[1] + (this.graticuleDimensions[3] - Math.round((this.series[i].points[j].value - valueRange[0]) / valuesPerPixel));
-        if(0 < styleOptions.connect)
+       
+        var switchOverIndex = curBand.switchOverIndex;
+        for(var j = 0,x,y,previousX,previousY; j < curBand.points.length; ++j)
         {
+          x = this.graticuleDimensions[0] + Math.round((curBand.points[j].time - timeRange[0]) / timePerPixel);
+          y = this.graticuleDimensions[1] + (this.graticuleDimensions[3] - Math.round((curBand.points[j].value - valueRange[0]) / valuesPerPixel));
           if(0 == j)
           {
             this.ctx.beginPath();
@@ -747,34 +687,108 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
             // connect direct
             if(1 == styleOptions.connect)
             {
-              this.ctx.lineTo(x, y);
-            // connect last
-            } else if(2 == styleOptions.connect)
+              this.ctx.lineTo(x,y);
+            } else
             {
-              this.ctx.lineTo(previousX,y);
-              this.ctx.lineTo(x, y);
-            // connect next
-            } else if(3 == styleOptions.connect)
-            {
-              this.ctx.lineTo(x, previousY);
-              this.ctx.lineTo(x, y);
+              if(j < switchOverIndex)
+              {
+                // connect last
+                if(2 == styleOptions.connect)
+                {
+                  this.ctx.lineTo(previousX, y);
+                  this.ctx.lineTo(x, y);
+                // connect next
+                } else if(3 == styleOptions.connect)
+                {
+                  this.ctx.lineTo(x, previousY);
+                  this.ctx.lineTo(x, y);
+                }
+              } else
+              {
+                // connect last
+                if(2 == styleOptions.connect)
+                {
+                  this.ctx.lineTo(x, previousY);
+                  this.ctx.lineTo(x, y);
+                // connext next
+                } else if(3 == styleOptions.connect)
+                {
+                  this.ctx.lineTo(previousX, y);
+                  this.ctx.lineTo(x, y);
+                }
+              }
             }
           }
+          previousX = x;
+          previousY = y;
         }
-        if(1 == this.series[i].points[j].count || (styleOptions.drawDots && 0 != this.series[i].points[j].count))
-        {
-          this.ctx.fillRect(x - styleOptions.halfPointWidth, y - styleOptions.halfPointWidth, styleOptions.pointWidth, styleOptions.pointWidth);
-        }
-        previousX = x;
-        previousY = y;
-      }
-      if(0 < styleOptions.connect)
-      {
-        this.ctx.stroke();
         this.ctx.closePath();
+        this.ctx.fill();
+        this.resetCtx();
       }
-      // reset ctx style options
-      this.resetCtx();
+    }
+  }
+  this.drawSeries = function(timeRange, valueRange, timePerPixel, valuesPerPixel)
+  {
+    for(var i = 0; i < this.data.metrics.length; ++i)
+    {
+      for(var curAggregate in this.data.metrics[i].series)
+      {
+        var curSeries = this.data.metrics[i].series[curAggregate];
+        if(curSeries)
+        {
+          var styleOptions = this.parseStyleOptions(curSeries.styleOptions);
+          if(styleOptions.skip || 0 == curSeries.points.length)
+          {
+            this.resetCtx();
+            continue;
+          }
+          
+          for(var j = 0,x,y,previousX,previousY; j < curSeries.points.length; ++j)
+          {
+            x = this.graticuleDimensions[0] + Math.round((curSeries.points[j].time - timeRange[0]) / timePerPixel);
+            y = this.graticuleDimensions[1] + (this.graticuleDimensions[3] - Math.round((curSeries.points[j].value - valueRange[0]) / valuesPerPixel));
+            if(0 < styleOptions.connect)
+            {
+              if(0 == j)
+              {
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, y);
+              } else
+              {
+                // connect direct
+                if(1 == styleOptions.connect)
+                {
+                  this.ctx.lineTo(x, y);
+                // connect last
+                } else if(2 == styleOptions.connect)
+                {
+                  this.ctx.lineTo(previousX,y);
+                  this.ctx.lineTo(x, y);
+                // connect next
+                } else if(3 == styleOptions.connect)
+                {
+                  this.ctx.lineTo(x, previousY);
+                  this.ctx.lineTo(x, y);
+                }
+              }
+            }
+            if(1 == curSeries.points[j].count || (styleOptions.drawDots && 0 != curSeries.points[j].count))
+            {
+              this.ctx.fillRect(x - styleOptions.halfPointWidth, y - styleOptions.halfPointWidth, styleOptions.pointWidth, styleOptions.pointWidth);
+            }
+            previousX = x;
+            previousY = y;
+          }
+          if(0 < styleOptions.connect)
+          {
+            this.ctx.stroke();
+            this.ctx.closePath();
+          }
+          // reset ctx style options
+          this.resetCtx();
+        }
+      }
     }
   };
   this.resetCtx = function()
@@ -784,71 +798,25 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
   };
   this.figureOutTimeRange = function ()
   {
-    if(0 == this.series.length)
-    {
-       return [0,0];
-    }
-    var timeRange = this.series[0].getTimeRange();
-    for(var i = 1; i < this.series.length; ++i)
-    {
-      var curRange = this.series[i].getTimeRange();
-      if(curRange[0] < timeRange[0])
-      {
-        timeRange[0] = curRange[0];
-      }
-      if(curRange[1] > timeRange[1])
-      {
-        timeRange[1] = curRange[1];
-      }
-    }
-    for(var i = 1; i < this.bands.length; ++i)
-    {
-      var curRange = this.bands[i].getTimeRange();
-      if(curRange[0] < timeRange[0])
-      {
-        timeRange[0] = curRange[0];
-      }
-      if(curRange[1] > timeRange[1])
-      {
-        timeRange[1] = curRange[1];
-      }
-    }
-    return timeRange;
+    return this.data.getTimeRange();
   };
   this.figureOutValueRange = function ()
   {
-    if(0 == this.series.length)
+    var valueRange = this.data.getValueRange();
+    if(undefined !== valueRange[0])
     {
-       return [0,0];
+      // add wiggle room
+      valueRange[0] *= 0.9;
+      valueRange[1] *= 1.1;
     }
-    var valueRange = this.series[0].getValueRange();
-    for(var i = 1; i < this.series.length; ++i)
-    {
-      var curRange = this.series[i].getValueRange();
-      if(curRange[0] < valueRange[0])
-      {
-        valueRange[0] = curRange[0];
-      }
-      if(curRange[1] > valueRange[1])
-      {
-        valueRange[1] = curRange[1];
-      }
-    }
-    for(var i = 1; i < this.bands.length; ++i)
-    {
-      var curRange = this.bands[i].getValueRange();
-      if(curRange[0] < valueRange[0])
-      {
-        valueRange[0] = curRange[0];
-      }
-      if(curRange[1] > valueRange[1])
-      {
-        valueRange[1] = curRange[1];
-      }
-    }
-    // add wiggle room
-    valueRange[0] *= 0.9;
-    valueRange[1] *= 1.1;
     return valueRange;
   };
+}
+function dateToHHMMStr(curDate)
+{
+  return (curDate.getHours() < 10 ? "0" : "") + curDate.getHours() + ":" + (curDate.getMinutes() < 10 ? "0" : "") + curDate.getMinutes();
+}
+function dateToHHMMSSStr(curDate)
+{
+  return (curDate.getHours() < 10 ? "0" : "") + curDate.getHours() + ":" + (curDate.getMinutes() < 10 ? "0" : "") + curDate.getMinutes() + ":" + (curDate.getSeconds() < 10 ? "0" : "") + curDate.getSeconds();
 }

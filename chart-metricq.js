@@ -244,14 +244,7 @@ function stylingHasChanged(evtObj)
       storeStylingsInLocalStorage();
       if(mainGraticule)
       {
-        for(var i = 0; i < mainGraticule.series.length; ++i)
-        {
-          mainGraticule.series[i].styleOptions = defaultSeriesStyling(mainGraticule.series[i].name);
-        }
-        for(var i = 0; i < mainGraticule.bands.length; ++i)
-        {
-          mainGraticule.bands[i].styleOptions = defaultBandStyling(mainGraticule.bands[i].name);
-        }
+        mainGraticule.data.updateStyling();
         mainGraticule.draw(false);
       }
       document.querySelector(".style_options_wrapper").style.backgroundColor = "rgba(64, 255, 64, 0.5)";
@@ -422,13 +415,21 @@ function registerCallbacks()
       var posOnGrid = mainGraticule.getTimeValueAtPoint(posClicked);
       ctx.font = "14px Sans";
       ctx.fillStyle = "#000000";
-      for(var i = 0; i < mainGraticule.series.length; ++i)
+      for(var i = 0, j = 0; i < mainGraticule.data.metrics.length; ++i)
       {
-        var curIndex = mainGraticule.series[i].getValueAtTimeAndIndex(posOnGrid[0])[1];
-        var curText = mainGraticule.series[i].name
-          + ", Index " + curIndex
-          + ", Count " + mainGraticule.series[i].points[curIndex].count;
-        ctx.fillText(curText, posClicked[0], i * 20 + 20 + mainGraticule.graticuleDimensions[1]);
+        for(var curAggregate in mainGraticule.data.metrics[i].series)
+        {
+          var curSeries = mainGraticule.data.metrics[i].series[curAggregate];
+          if(curSeries && 0 < curSeries.points.length)
+          {
+            var curIndex = curSeries.getValueAtTimeAndIndex(posOnGrid[0])[1];
+            var curText = mainGraticule.data.metrics[i].name + "/" + curSeries.aggregate
+              + ", Index " + curIndex
+              + ", Count " + curSeries.points[curIndex].count;
+            ctx.fillText(curText, posClicked[0], j * 20 + 20 + mainGraticule.graticuleDimensions[1]);
+            ++j;
+          }
+        }
       }
     }
   });
@@ -447,23 +448,21 @@ function registerCallbacks()
       ctx.font = "14px Sans";
       var metricsArray = new Array();
       var maxTextWidth = 0;
-      for(var i = 0; i < mainGraticule.series.length; ++i)
+      var allValuesAtTime = mainGraticule.data.getAllValuesAtTime(curPoint[0]);
+      for(var i = 0; i < allValuesAtTime.length; ++i)
       {
-        if(0 < mainGraticule.series[i].points.length)
+        var newEntry = [
+            allValuesAtTime[i][0],
+            allValuesAtTime[i][1]
+          ];
+        var curTextLine = (new Number(newEntry[0])).toFixed(3) + " " + allValuesAtTime[i][1] + "/" + allValuesAtTime[i][2];
+        newEntry.push(curTextLine);
+        newEntry.push(ctx.measureText(curTextLine).width);
+        if(newEntry[3] > maxTextWidth)
         {
-          var newEntry = [
-              mainGraticule.series[i].getValueAtTimeAndIndex(curPoint[0])[0],
-              mainGraticule.series[i].name.split("/")[0]
-            ];
-          var curTextLine = (new Number(newEntry[0])).toFixed(3) + " " + mainGraticule.series[i].name;
-          newEntry.push(curTextLine);
-          newEntry.push(ctx.measureText(curTextLine).width);
-          if(newEntry[3] > maxTextWidth)
-          {
-            maxTextWidth = newEntry[3];
-          }
-          metricsArray.push(newEntry);
+          maxTextWidth = newEntry[3];
         }
+        metricsArray.push(newEntry);
       }
       metricsArray.sort(function (a,b) { return b[0] - a[0]; } );
       var posDate = new Date(curPoint[0]);
@@ -546,68 +545,20 @@ function updateAllSeriesesBands(lastUpdateTime)
   var metricTo   = new Date(mainGraticule.curTimeRange[1]);
   metricParams.setTimeFields(metricFrom, metricTo);
   metricParams.setLocation(metricFrom, metricTo);
-  var intervalMs = Math.floor((mainGraticule.curTimeRange[1] - mainGraticule.curTimeRange[0]) / 40);
   var distinctMetrics = new Object();
-  for(var i = 0; i < mainGraticule.series.length; ++i)
+  for(var i = 0; i < mainGraticule.data.metrics.length; ++i)
   {
-    var curBaseName = "";
-    var extension = undefined;
-    var curPosOfSlash = mainGraticule.series[i].name.indexOf("/");
-    if(-1 < curPosOfSlash)
-    {
-      curBaseName = mainGraticule.series[i].name.substring(0, curPosOfSlash);
-      extension = mainGraticule.series[i].name.substring(curPosOfSlash + 1);
-    } else
-    {
-      curBaseName = mainGraticule.series[i].name;
-    }
-    if(!distinctMetrics[curBaseName])
-    {
-      distinctMetrics[curBaseName] = new Object();
-    }
-    if(extension)
-    {
-      distinctMetrics[curBaseName][extension] = true;
-    }
-  }
-  for(var i = 0; i < mainGraticule.bands.length; ++i)
-  {
-    var curBaseName = "";
-    var curPosOfSlash = mainGraticule.series[i].name.indexOf("/");
-    if(-1 < curPosOfSlash)
-    {
-      curBaseName = mainGraticule.series[i].name.substring(0, curPosOfSlash);
-    }
-    if(!distinctMetrics[curBaseName])
-    {
-      distinctMetrics[curBaseName] = {
-        min: true,
-        max: true
-      };
-    } else
-    {
-      distinctMetrics[curBaseName]["min"] = true;
-      distinctMetrics[curBaseName]["max"] = true;
-    }
+    distinctMetrics[mainGraticule.data.metrics[i].name] = true;
   }
   for(var curMetricBase in distinctMetrics)
   {
-    var extensionArr = new Array();
-    for(var curExtension in distinctMetrics[curMetricBase])
-    {
-      extensionArr.push(curExtension);
-    }
-    fetchMeasureData(metricFrom, metricTo, calcIntervalMs(metricFrom, metricTo), curMetricBase, function(jsonObj) { processMetricQData(jsonObj, false, false); });
+    fetchMeasureData(metricFrom, metricTo, calcMaxDataPoints(metricFrom, metricTo), curMetricBase, function(jsonObj) { mainGraticule.data.processMetricQDatapoints(jsonObj, false, false); });
   }
   setTimeout(allAjaxCompletedWatchdog, 30);
 }
 function initializeGraticule()
 {
   mainGraticule = new Graticule(ctx, [canvasSpaceLeftTop[0], canvasSpaceLeftTop[1], canvasDimensions[0] - canvasSpaceLeftTop[0], canvasDimensions[1] - canvasSpaceLeftTop[1]], canvasSpaceLeftTop[0], canvasSpaceLeftTop[1], [canvasDimensions[0] + canvasSpaceLeftTop[0], canvasDimensions[1] + canvasSpaceLeftTop[1]]);
-}
-//MOVED to data-handling.js / DataCache
-function processMetricQData(datapointsJSON, doDraw, doResize)
-{
 }
 function intEightBitsToHex(eightBitNumber)
 {
@@ -624,7 +575,6 @@ function int32BitsToHex(thirtytwoBitNumber)
 }
 function defaultBandStyling(metricBaseName)
 {
-  //clone the options
   var options = matchStylingOptions("band:" + metricBaseName);
   if("default" === options.color)
   {
@@ -632,18 +582,12 @@ function defaultBandStyling(metricBaseName)
   }
   return options;
 }
-function defaultSeriesStyling(metricName)
+function defaultSeriesStyling(metricBaseName, aggregateName)
 {
-  var baseName = metricName;
-  if(-1 < metricName.indexOf("/"))
-  {
-    baseName = metricName.substring(0, metricName.indexOf("/"));
-  }
-  //clone the options
-  var options = matchStylingOptions("series:" + metricName);
+  var options = matchStylingOptions("series:" + metricBaseName + "/" + aggregateName);
   if("default" === options.color)
   {
-    options.color = determineColorForMetric(baseName);
+    options.color = determineColorForMetric(metricBaseName);
   }
   return options;
 }
@@ -727,11 +671,11 @@ function createChart()
   masterWrapper.appendChild(wrapperEle);
   return canvasEle.getContext("2d");
 }
-function calcIntervalMs(metricFrom, metricTo)
+function calcMaxDataPoints(metricFrom, metricTo)
 {
   var xPixelRequest = parseFloat(document.getElementsByName("metric_request_every_that_many_pixels")[0].value);
-  var countOfDataPoints = (canvasDimensions[0] - canvasSpaceLeftTop[0]) / xPixelRequest;
-  return Math.floor((metricTo.getTime() - metricFrom.getTime()) / countOfDataPoints);
+  var countOfDataPoints = Math.floor((canvasDimensions[0] - canvasSpaceLeftTop[0]) / xPixelRequest);
+  return countOfDataPoints;
 }
 function urlImport(importUrlString)
 {
@@ -811,20 +755,20 @@ function submitMetricName()
 }
 function fetchAllMetricFields(metricFrom, metricTo)
 {
-  var intervalMs = calcIntervalMs(metricFrom, metricTo);
-  metricParams.onEachName(function(fromTime, toTime, elapsedMs) { return function(nameEle, nameValue)
+  var maxDataPoints = calcMaxDataPoints(metricFrom, metricTo);
+  metricParams.onEachName(function(fromTime, toTime, countDataPoints) { return function(nameEle, nameValue)
   {
     if(0 < nameValue.length)
     {
       nameEle.parentNode.style.backgroundColor = determineColorForMetric(nameValue.split("/")[0]);
       nameEle.style.backgroundColor = "inherit";
-      fetchMeasureData(fromTime, toTime, elapsedMs, nameValue, function(jsonObj) { mainGraticule.setTimeRange([fromTime.getTime(), toTime.getTime()]); processMetricQData(jsonObj, false, false); });
+      fetchMeasureData(fromTime, toTime, countDataPoints, nameValue, function(jsonObj) { mainGraticule.setTimeRange([fromTime.getTime(), toTime.getTime()]); mainGraticule.data.processMetricQDatapoints(jsonObj, false, false); });
     }
-  }; } (metricFrom, metricTo, intervalMs));
+  }; } (metricFrom, metricTo, maxDataPoints));
   setTimeout(allAjaxCompletedWatchdog, 30);
 }
 
-function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbackFunc)
+function fetchMeasureData(timeStart, timeEnd, maxDataPoints, metricToFetch, callbackFunc)
 {
   if(timeStart.getTime() >= timeEnd.getTime())
   {
@@ -909,7 +853,7 @@ function fetchMeasureData(timeStart, timeEnd, intervalMs, metricToFetch, callbac
       "from": from,
       "to": to
     },
-    "intervalMs": intervalMs,
+    "maxDataPoints": maxDataPoints,
     "targets": [
       {
         "metric": metricToFetch,
