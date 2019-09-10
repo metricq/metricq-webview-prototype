@@ -67,6 +67,14 @@ var metricParams = {
       }
     }
   },
+  getPixels: function()
+  {
+    return parseFloat(metricParams.fields["pixels"].value);
+  },
+  setPixels: function(pixelValue)
+  {
+    metricParams.fields["pixels"].value = pixelValue;
+  },
   addNameField: function(predefinedValue)
   {
     var i = metricParams.namesValues.length;
@@ -120,7 +128,8 @@ var metricParams = {
       "cntr": metricParams.namesValues,
       "start": timeFrom.getTime(),
       "stop": timeTo.getTime(),
-      "type": "default"
+      "type": "default",
+      "pixels": metricParams.getPixels()
     };
     var stringifiedJson = window.JSURL.stringify(locationJson);
     var curLoc = window.location.href;

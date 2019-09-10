@@ -245,7 +245,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
         stepSize /= 2;
       }
     }
-    var firstStep = rangeStart + (stepSize - (rangeStart % stepSize));
+    var firstStep = rangeStart - (rangeStart % stepSize);
     var stepsArr = new Array()
     for(var i = firstStep; i < rangeEnd; i+=stepSize)
     {
@@ -812,8 +812,8 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
     if(undefined !== valueRange[0])
     {
       // add wiggle room
-      valueRange[0] *= 0.9;
-      valueRange[1] *= 1.1;
+      valueRange[0] -= (valueRange[1] - valueRange[0]) * 0.10;
+      valueRange[1] += (valueRange[1] - valueRange[0]) * 0.10;
     }
     return valueRange;
   };

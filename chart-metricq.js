@@ -746,6 +746,10 @@ function urlImport(importUrlString)
       metricParams.addNameField(decodedJson.cntr[i]);
     }
     metricParams.setTimeFields(timeStart, timeEnd);
+    if(decodedJson["pixels"])
+    {
+      metricParams.setPixels(decodedJson["pixels"]);
+    }
     if(mainGraticule)
     {
       mainGraticule.setTimeRange([timeStart.getTime(), timeEnd.getTime()]);
