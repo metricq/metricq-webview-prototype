@@ -413,7 +413,8 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
       "pointWidth": 2,
       "halfPointWidth": 1,
       "drawDots": false,
-      "lineDash": []
+      "lineDash": [],
+      "oddLineWidthAddition": 0
     };
     if(styleOptions)
     {
@@ -471,6 +472,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
       if(styleOptions.lineWidth)
       {
         this.ctx.lineWidth = styleOptions.lineWidth;
+        parsedObj.oddLineWidthAddition = (1 == (styleOptions.lineWidth % 2)) ? 0.5 : 0;
       }
       if(styleOptions.lineDash)
       {
@@ -753,8 +755,8 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
           
           for(var j = 0,x,y,previousX,previousY; j < curSeries.points.length; ++j)
           {
-            x = this.graticuleDimensions[0] + Math.round((curSeries.points[j].time - timeRange[0]) / timePerPixel);
-            y = this.graticuleDimensions[1] + (this.graticuleDimensions[3] - Math.round((curSeries.points[j].value - valueRange[0]) / valuesPerPixel));
+            x = this.graticuleDimensions[0] + Math.round((curSeries.points[j].time - timeRange[0]) / timePerPixel) + styleOptions.oddLineWidthAddition;
+            y = this.graticuleDimensions[1] + (this.graticuleDimensions[3] - Math.round((curSeries.points[j].value - valueRange[0]) / valuesPerPixel)) + styleOptions.oddLineWidthAddition;
             if(0 < styleOptions.connect)
             {
               if(0 == j)
