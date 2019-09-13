@@ -125,30 +125,44 @@ function DataCache()
     }
     return [min, max];
   }
-  this.getValueRange = function()
+  this.getValueRange = function(doGetAllTime)
   {
     var min = undefined,
         max = undefined;
     for(var i = 0; i < this.metrics.length; ++i)
     {
-      for(var curAggregate in this.metrics[i].series)
+      if(doGetAllTime && this.metrics[i].allTime)
       {
-        if(this.metrics[i].series[curAggregate])
+        if(undefined === min || min > this.metrics[i].allTime.min)
         {
-          var curTimeRange = this.metrics[i].series[curAggregate].getValueRange();
-          if(undefined === min)
+          min = this.metrics[i].allTime.min;
+        }
+        if(undefined === max || max < this.metrics[i].allTime.max)
+        {
+          max = this.metrics[i].allTime.max;
+        }
+        continue;
+      } else
+      {
+        for(var curAggregate in this.metrics[i].series)
+        {
+          if(this.metrics[i].series[curAggregate])
           {
-            min = curTimeRange[0];
-            max = curTimeRange[1];
-          } else
-          {
-            if(min > curTimeRange[0])
+            var curTimeRange = this.metrics[i].series[curAggregate].getValueRange();
+            if(undefined === min)
             {
               min = curTimeRange[0];
-            }
-            if(max < curTimeRange[1])
-            {
               max = curTimeRange[1];
+            } else
+            {
+              if(min > curTimeRange[0])
+              {
+                min = curTimeRange[0];
+              }
+              if(max < curTimeRange[1])
+              {
+                max = curTimeRange[1];
+              }
             }
           }
         }
@@ -218,20 +232,6 @@ function DataCache()
     }
     return valueArr;
   }
-/* 
-  this.addSeries = function(seriesName, styleOptions)
-  {
-    var newSeries = new Series(seriesName, styleOptions);
-    this.series.push(newSeries);
-    return newSeries;
-  };
-  this.addBand = function(bandName, styleOptions)
-  {
-    var newBand = new Band(bandName, styleOptions);
-    this.bands.push(newBand);
-    return newBand;
-  };
-*/
 }
 
 function MetricCache(paramMetricName)
@@ -242,6 +242,7 @@ function MetricCache(paramMetricName)
                  "avg": undefined,
                  "raw": undefined};
   this.band = undefined;
+  this.allTime = undefined;
   this.resetData = function()
   {
     delete this.series;
@@ -325,53 +326,74 @@ function MetricCache(paramMetricName)
       }
     }
   }
-/*
-  this.getSeriesIndex = function(seriesSpecifier)
+  this.processAllTimeQuery = function(selfReference, jsonResponse)
   {
-    for(var i = 0; i < this.series.length; ++i)
+    var allTimeMin = undefined;
+    var allTimeMax = undefined;
+    for(var i = 0; i < jsonResponse.length; ++i)
     {
-      if(seriesSpecifier === this.series[i].name)
+      var metricParts = jsonResponse[i].target.split("/");
+      if("min" == metricParts[1])
       {
-        return i;
-      }
-    }
-    return undefined;
-  };
-  this.getSeries = function(seriesSpecifier)
-  {
-    if("number" == (typeof seriesSpecifier))
-    {
-      if((0 <= seriesSpecifier) && (this.series.length > seriesSpecifier))
-      {
-        return this.series[seriesSpecifier];
-      }
-    } else
-    {
-      return this.series[this.getSeriesIndex(seriesSpecifier)];
-    }
-    return undefined;
-  };
-  this.getBand = function(bandSpecifier)
-  {
-    if("number" == (typeof bandSpecifier))
-    {
-      if((0 <= bandSpecifier) && (this.bands.length > bandSpecifier))
-      {
-        return this.bands[bandSpecifier];
-      }
-    } else
-    {
-      for(var i = 0; i < this.bands.length; ++i)
-      {
-        if(bandSpecifier === this.bands[i].name)
+        for(var j = 0; j < jsonResponse[i].datapoints.length; ++j)
         {
-          return this.bands[i];
+          if(undefined == allTimeMin || allTimeMin > jsonResponse[i].datapoints[j][0])
+          {
+            allTimeMin = jsonResponse[i].datapoints[j][0];
+          }
+        }
+      } else if("max" == metricParts[1])
+      {
+        for(var j = 0; j < jsonResponse[i].datapoints.length; ++j)
+        {
+          if(undefined == allTimeMax || allTimeMax < jsonResponse[i].datapoints[j][0])
+          {
+            allTimeMax = jsonResponse[i].datapoints[j][0];
+          }
         }
       }
     }
-    return undefined;
+    if(undefined !== allTimeMin || undefined !== allTimeMax)
+    {
+      selfReference.allTime = {
+        "min": allTimeMin,
+        "max": allTimeMax
+      };
+    }
   }
-*/
+  this.fetchAllTimeMinMax = function()
+  {
+    var reqJson = {
+      "range": {
+        "from": (new Date("2010-01-01")).toISOString(),
+        "to": (new Date()).toISOString() 
+      },
+      "maxDataPoints": 1,
+      "targets": [
+        {
+          "metric": this.name,
+          "functions": [ "min", "max" ]
+        }
+      ]
+    };
+    var reqAjax = new XMLHttpRequest();
+    reqAjax.open("POST", METRICQ_URL, true);
+    reqAjax.processingFunction = function (ref) { return function (json) {ref.processAllTimeQuery(ref, json); }; }(this);
+    reqAjax.addEventListener("load", function(evtObj) {
+      var parsedJson = undefined;
+      try {
+        parsedJson = JSON.parse(evtObj.target.responseText);
+      } catch(exc)
+      {
+      }
+      if(parsedJson)
+      {
+        evtObj.target.processingFunction(parsedJson);
+      }
+    });
+    reqAjax.send(JSON.stringify(reqJson));
+  }
+  this.fetchAllTimeMinMax();
 }
 
 
@@ -425,6 +447,7 @@ function Series(paramAggregate, paramStyleOptions)
   this.points = new Array();
   this.aggregate = paramAggregate;
   this.styleOptions = paramStyleOptions;
+  this.allTime = undefined;
   this.clear = function ()
   {
     delete this.points;

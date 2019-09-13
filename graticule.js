@@ -358,7 +358,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
     }
     this.lastRangeChangeTime = (new Date()).getTime();
   };
-  this.automaticallyDetermineRanges = function(determineTimeRange, determineValueRange)
+  this.automaticallyDetermineRanges = function(determineTimeRange, determineValueRange, allTimeValueRanges)
   {
     if(determineTimeRange)
     {
@@ -366,7 +366,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
     }
     if(determineValueRange)
     {
-      this.curValueRange = this.figureOutValueRange();
+      this.curValueRange = this.figureOutValueRange(allTimeValueRanges);
       this.curValuesPerPixel = (this.curValueRange[1] - this.curValueRange[0]) / this.graticuleDimensions[3];
     }
     if(determineTimeRange || determineValueRange)
@@ -809,9 +809,9 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
   {
     return this.data.getTimeRange();
   };
-  this.figureOutValueRange = function ()
+  this.figureOutValueRange = function (allTimeValueRanges)
   {
-    var valueRange = this.data.getValueRange();
+    var valueRange = this.data.getValueRange(allTimeValueRanges);
     if(undefined !== valueRange[0])
     {
       // add wiggle room

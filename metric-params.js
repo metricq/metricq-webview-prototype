@@ -7,11 +7,13 @@ var metricParams = {
     "to_time": undefined,
     "presets": undefined,
     "names": undefined,
-    "pixels": undefined
+    "pixels": undefined,
+    "all_time": undefined
   },
   namesEles: new Array(),
   namesValues: new Array(),
   lastTimeFieldChange: 0,
+  allTimeReference: true,
 
   init: function() {
     metricParams.fields["import"] = document.getElementsByName("metric_import")[0];
@@ -22,6 +24,7 @@ var metricParams = {
     metricParams.fields["presets"] = document.getElementById("metric_preset_selection");
     metricParams.fields["names"] = document.querySelector(".metric_names");
     metricParams.fields["pixels"] = document.getElementsByName("metric_request_every_that_many_pixels")[0];
+    metricParams.fields["all_time"] = document.getElementsByName("metric_all_time")[0];
     metricParams.fields["to_date"].addEventListener("change",function(evt){
       var fromEle = metricParams.fields["from_date"];
       fromEle.setAttribute("max", evt.target.value);
@@ -30,6 +33,12 @@ var metricParams = {
     metricParams.fields["from_time"].addEventListener("change", metricParams.timeWasChanged);
     metricParams.fields["to_date"].addEventListener("change", metricParams.timeWasChanged);
     metricParams.fields["to_time"].addEventListener("change", metricParams.timeWasChanged);
+    metricParams.fields["all_time"].addEventListener("change", function(evtObj) {
+      metricParams.allTimeReference = !! evtObj.target.checked;
+      mainGraticule.automaticallyDetermineRanges(false, true, metricParams.allTimeReference);
+      mainGraticule.draw(false);
+    });
+    metricParams.allTimeReference = !!metricParams.fields["all_time"].checked;
 
     metricParams.initPresets();
   },

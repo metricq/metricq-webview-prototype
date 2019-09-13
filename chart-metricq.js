@@ -8,6 +8,7 @@ var timers = new Object();
 var ajaxOpenRequests = new Array();
 var ajaxRequestIndex = 1;
 var lastStylingChangeTime = 0;
+var METRICQ_URL = "https://grafana.metricq.zih.tu-dresden.de/metricq/query";
 var uiOptions = {
   horizontalScrolling: false,
   smoothScrollingExtraData: true
@@ -432,7 +433,7 @@ function uiInteractZoomIn(evtObj)
       posStart = swap;
     }
     mainGraticule.setTimeRange([posStart[0], posEnd[0]]);
-    mainGraticule.automaticallyDetermineRanges(false, true);
+    mainGraticule.automaticallyDetermineRanges(false, true, metricParams.allTimeReference);
     setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 200);
     mainGraticule.draw(false);
   }
@@ -472,7 +473,7 @@ function uiInteractZoomWheel(evtObj)
     if(curTimeValue)
     {
       mainGraticule.zoomTimeAndValueAtPoint(curTimeValue, scrollDirection, true, false);
-      mainGraticule.automaticallyDetermineRanges(false, true);
+      mainGraticule.automaticallyDetermineRanges(false, true, metricParams.allTimeReference);
       setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 150);
       mainGraticule.draw(false);
     }
@@ -861,7 +862,7 @@ function fetchMeasureData(timeStart, timeEnd, maxDataPoints, metricToFetch, call
   ajaxOpenRequests.push(curRequestId);
   var req = new XMLHttpRequest();
   req.requestId = curRequestId;
-  var url = "https://grafana.metricq.zih.tu-dresden.de/metricq/query";
+  var url = METRICQ_URL;
   req.open("POST", url, true);
   req.onreadystatechange = function (callMe) { return function(obj) {
     if(1 == obj.target.readyState)
@@ -947,7 +948,7 @@ function allAjaxCompletedWatchdog()
     if(mainGraticule)
     {
       var needSetTimeRange = !mainGraticule.curTimeRange;
-      mainGraticule.automaticallyDetermineRanges(needSetTimeRange, true);
+      mainGraticule.automaticallyDetermineRanges(needSetTimeRange, true, metricParams.allTimeReference);
       mainGraticule.draw(false);
     }
   } else
