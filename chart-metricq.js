@@ -8,12 +8,14 @@ var timers = new Object();
 var ajaxOpenRequests = new Array();
 var ajaxRequestIndex = 1;
 var lastStylingChangeTime = 0;
+var lastErrorArrowAppeared = 0;
 var METRICQ_URL = "https://grafana.metricq.zih.tu-dresden.de/metricq/query";
 var uiOptions = {
   horizontalScrolling: false,
   smoothScrollingExtraData: true,
   minimumXPixels: 0.5,
-  sortTooltip: false
+  sortTooltip: false,
+  errorArrowInterval: 2000
 };
 var uiInteractArr = [
   ["drag", ["17"], "uiInteractPan"],
@@ -37,8 +39,19 @@ var stylingOptions = {
       alpha: 0.8
     },
     {
-      nameRegex: "series:[^/]+/(min|max)",
-      title: "Min/Max Series",
+      nameRegex: "series:[^/]+/min",
+      title: "Min Series",
+      skip: true,
+      color: "default",
+      connect: "next",
+      width: 2,
+      lineWidth: 2,
+      dots: false,
+      alpha: 1
+    },
+    {
+      nameRegex: "series:[^/]+/max",
+      title: "Max Series",
       skip: true,
       color: "default",
       connect: "next",
@@ -124,13 +137,21 @@ function initializeStyleOptions()
       curTitle = "Styling #" + (i + 1);
     }
     curTab = stylingTabs.addTab(curTitle);
+    var wrapperEle = document.createElement("div");
     textareaEle = document.createElement("textarea");
     textareaEle.setAttribute("rows", "13");
     textareaEle.setAttribute("cols", "60");
     textareaEle.setAttribute("class", "style_options_list_styles");
+    textareaEle.style.float = "left";
     textareaEle.value = formatJson(JSON.stringify(stylingOptions.list[i]));
     textareaEle.addEventListener("keyup", stylingHasChanged);
-    curTab.appendChild(textareaEle);
+    var closeButton = document.createElement("button");
+    closeButton.appendChild(document.createTextNode("entfernen"));
+    closeButton.style.float = "right";
+    closeButton.addEventListener("click", function(selectedTitle, selectedIndex) { return function(evtObj) { stylingTabs.removeTab(selectedTitle); stylingOptions.list.splice(selectedIndex, 1); storeStylingsInLocalStorage(); }; }(curTitle, i));
+    wrapperEle.appendChild(textareaEle);
+    wrapperEle.appendChild(closeButton);
+    curTab.appendChild(wrapperEle);
   }
 
   curTab = stylingTabs.addTab("determineColorForMetric(metricBaseName)");
@@ -331,6 +352,12 @@ function handleStylingTextareaError(exc, lastParsedTextarea)
 }
 function putErrorMarkerAt(textareaErrorHappened, lineAt, columnAt)
 {
+  var curTime = (new Date()).getTime();
+  if((curTime - lastErrorArrowAppeared) < uiOptions.errorArrowInterval)
+  {
+    return;
+  }
+  lastErrorArrowAppeared = curTime;
   var x = textareaErrorHappened.parentNode.parentNode.parentNode.offsetLeft + columnAt * 6;
   var y = textareaErrorHappened.offsetTop + lineAt * 16;
   var arrowEle = document.createElement("div");

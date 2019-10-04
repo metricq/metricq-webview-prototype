@@ -39,6 +39,14 @@ function Tabbing(paramParentElement, paramTabSize)
     }
     return x;
   };
+  this.resizeTabHeadings = function()
+  {
+    var freeSpaceWidth = this.headArea.offsetWidth - 50;
+    for(var i = 0; i < this.visibleTabHeadings.length; ++i)
+    {
+      this.visibleTabHeadings[i].doResize(Math.round(freeSpaceWidth / this.visibleTabHeadings.length));
+    }
+  }
   this.addTab = function(tabName, predefinedTabBody)
   {
     var newTabDescription = new TabDescription(this.bodyArea, tabName);
@@ -54,10 +62,7 @@ function Tabbing(paramParentElement, paramTabSize)
     {
       this.visibleTabsCount++;
       this.visibleTabHeadings.push(new TabHeading(this, tabName));
-      for(var i = 0; i < this.visibleTabHeadings.length; ++i)
-      {
-        this.visibleTabHeadings[i].doResize(Math.round(freeSpaceWidth / this.visibleTabHeadings.length));
-      }
+      this.resizeTabHeadings();
     } else
     {
       if(!this.moreTabsEle)
@@ -239,6 +244,52 @@ function Tabbing(paramParentElement, paramTabSize)
     }
     return undefined;
   };
+  this.removeTab = function (tabName)
+  {
+    var tabIndex = this.getTabDescIndex(tabName);
+    if(undefined !== tabIndex)
+    {
+      var tabHeadingIndex = this.getTabHeadingIndex(tabName);
+      if(undefined !== tabHeadingIndex)
+      {
+        var needShiftFocus = this.visibleTabHeadings[tabHeadingIndex].hasFocus;
+        var allTabsMatchedToHeadings = true;
+        for(var i = 0; i < this.tabs.length; ++i)
+        {
+          var foundHeading = false;
+          for(var j = 0; j < this.visibleTabHeadings.length; ++j)
+          {
+            if(this.tabs[i].name == this.visibleTabHeadings[j].title)
+            {
+              foundHeading = true;
+              break;
+            }
+          }
+          if(!foundHeading)
+          {
+            allTabsMatchedToHeadins = false;
+            this.visibleTabHeadings[tabHeadingIndex].setTitle(this.tabs[i].name);
+            if(needShiftFocus)
+            {
+              this.focusTab(this.visibleTabHeadings[0].title);
+            }
+            break;
+          }
+        }
+        if(allTabsMatchedToHeadings)
+        {
+          this.headArea.removeChild(this.visibleTabHeadings[tabHeadingIndex].headingEle);
+          this.visibleTabHeadings.splice(tabHeadingIndex, 1);
+          this.resizeTabHeadings();
+          if(needShiftFocus)
+          {
+            this.focusTab(this.visibleTabHeadings[0].title);
+          }
+        }
+      }
+      this.tabs.splice(tabIndex, 1);
+    }
+  }
 
   this.init();
 }
@@ -262,6 +313,7 @@ function TabDescription(parentElement, tabName)
 function TabHeading(paramTabbingObj, tabName)
 {
   this.title = tabName;
+  this.hasFocus = false;
   this.pxString = function(pxArray)
   {
     var outStr = "";
@@ -360,10 +412,12 @@ function TabHeading(paramTabbingObj, tabName)
   this.focus = function()
   {
     this.headingEle.setAttribute("class", "tab_head tab_head_focused")
+    this.hasFocus = true;
   }
   this.unfocus = function()
   {
     this.headingEle.setAttribute("class", "tab_head tab_head_unfocused")
+    this.hasFocus = false;
   }
   this.setTitle = function(newTitle)
   {
