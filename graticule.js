@@ -426,6 +426,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
     };
     if(styleOptions)
     {
+      var styleKeys = Object.keys(styleOptions);
       // first parse Options for parsedObj
       parsedObj.skip = !! styleOptions.skip;
       /* connect is responsible for the way the
@@ -450,9 +451,9 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
           parsedObj.connect = 0;
           break;
       }
-      if(styleOptions.width)
+      if(styleKeys.includes("width"))
       {
-        parsedObj.pointWidth = styleOptions.width;
+        parsedObj.pointWidth = parseFloat(styleOptions.width);
         parsedObj.halfPointWidth = Math.floor(styleOptions.width / 2.00);
       }
       parsedObj.drawDots = !! styleOptions.dots;
@@ -473,16 +474,16 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
       {
         this.parseGradient(styleOptions.gradient);
       }
-      if(styleOptions.alpha)
+      if(styleKeys.includes("alpha"))
       {
-        this.ctx.globalAlpha = styleOptions.alpha;
+        this.ctx.globalAlpha = parseFloat(styleOptions.alpha);
       }
-      if(styleOptions.lineWidth)
+      if(styleKeys.includes("lineWidth"))
       {
-        this.ctx.lineWidth = styleOptions.lineWidth;
+        this.ctx.lineWidth = parseFloat(styleOptions.lineWidth);
         parsedObj.oddLineWidthAddition = (1 == (styleOptions.lineWidth % 2)) ? 0.5 : 0;
       }
-      if(styleOptions.lineDash)
+      if(styleKeys.includes("lineDash"))
       {
         this.ctx.setLineDash(styleOptions.lineDash);
       }
