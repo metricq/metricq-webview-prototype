@@ -26,6 +26,7 @@ var metricParams = {
     metricParams.fields["pixels"] = document.getElementsByName("metric_request_every_that_many_pixels")[0];
     metricParams.fields["all_time"] = document.getElementsByName("metric_all_time")[0];
     metricParams.fields["load_more"] = document.getElementsByName("metric_load_more")[0];
+    metricParams.fields["sort_tooltip"] = document.getElementsByName("metric_sort_tooltip")[0];
     metricParams.fields["to_date"].addEventListener("change",function(evt){
       var fromEle = metricParams.fields["from_date"];
       fromEle.setAttribute("max", evt.target.value);
@@ -41,6 +42,9 @@ var metricParams = {
     });
     metricParams.fields["load_more"].addEventListener("change", function(evtObj) {
       uiOptions.smoothScrollingExtraData = !!evtObj.target.checked;
+    });
+    metricParams.fields["sort_tooltip"].addEventListener("change", function(evtObj) {
+      uiOptions.sortTooltip = !!evtObj.target.checked;
     });
     metricParams.allTimeReference = !!metricParams.fields["all_time"].checked;
 

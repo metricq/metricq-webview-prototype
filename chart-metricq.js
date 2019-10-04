@@ -12,7 +12,8 @@ var METRICQ_URL = "https://grafana.metricq.zih.tu-dresden.de/metricq/query";
 var uiOptions = {
   horizontalScrolling: false,
   smoothScrollingExtraData: true,
-  minimumXPixels: 0.5
+  minimumXPixels: 0.5,
+  sortTooltip: false
 };
 var uiInteractArr = [
   ["drag", ["17"], "uiInteractPan"],
@@ -510,7 +511,10 @@ function uiInteractLegend(evtObj)
     }
     metricsArray.push(newEntry);
   }
-  metricsArray.sort(function (a,b) { return b[0] - a[0]; } );
+  if(uiOptions.sortTooltip)
+  {
+    metricsArray.sort(function (a,b) { return b[0] - a[0]; } );
+  }
   var posDate = new Date(curPoint[0]);
   var timeString = posDate.toLocaleString();
   ctx.fillText(timeString, curPosOnCanvas[0] + 10, 40 - 20);
