@@ -327,27 +327,34 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
   };
   this.setTimeRange = function (newTimeRange)
   {
+    var tooNarrow = false;
     if((newTimeRange[1] - newTimeRange[0]) < 1000)
     {
       var oldDelta = newTimeRange[1] - newTimeRange[0];
       var newDelta = 1000;
       newTimeRange[0] -= Math.round((newDelta - oldDelta) / 2.00);
       newTimeRange[1] += Math.round((newDelta - oldDelta) / 2.00);
+      tooNarrow = true;
     }
     this.curTimeRange = [newTimeRange[0], newTimeRange[1]];
     this.curTimePerPixel = (this.curTimeRange[1] - this.curTimeRange[0]) / this.graticuleDimensions[2];
     this.lastRangeChangeTime = (new Date()).getTime();
+    return !tooNarrow;
   };
   this.zoomTimeAndValueAtPoint = function(pointAt, zoomDirection, zoomTime, zoomValue)
   {
     var zoomFactor = 1 + zoomDirection;
     var newTimeDelta  = (this.curTimeRange[1] - this.curTimeRange[0]  ) * zoomFactor;
     var newValueDelta = (this.curValueRange[1] - this.curValueRange[0]) * zoomFactor;
+    var couldZoom = false;
     if(zoomTime && newTimeDelta > 50)
     {
       var relationalPositionOfPoint = (pointAt[0] - this.curTimeRange[0]) / (this.curTimeRange[1] - this.curTimeRange[0]);
-      this.setTimeRange([ pointAt[0] - (newTimeDelta * relationalPositionOfPoint),
-                          pointAt[0] + (newTimeDelta * (1 - relationalPositionOfPoint))]);
+      if(this.setTimeRange([ pointAt[0] - (newTimeDelta * relationalPositionOfPoint),
+                             pointAt[0] + (newTimeDelta * (1 - relationalPositionOfPoint))]))
+      {
+        couldZoom = true;
+      }
     }
     if(zoomValue)
     {
@@ -357,6 +364,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
       this.curValuesPerPixel = (this.curValueRange[1] - this.curValueRange[0]) / this.graticuleDimensions[3];
     }
     this.lastRangeChangeTime = (new Date()).getTime();
+    return couldZoom;
   };
   this.automaticallyDetermineRanges = function(determineTimeRange, determineValueRange, allTimeValueRanges)
   {

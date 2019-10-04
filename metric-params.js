@@ -89,7 +89,6 @@ var metricParams = {
     var valueString = metricParams.fields["pixels"].value;
     valueString = valueString.replace(/,/g, ".");
     var valueNumber = parseFloat(valueString);
-console.log(valueNumber);
     if(isNaN(valueNumber))
     {
       valueNumber = parseFloat(metricParams.fields["pixels"].getAttribute("placeholder"));

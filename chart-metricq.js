@@ -9,6 +9,7 @@ var ajaxOpenRequests = new Array();
 var ajaxRequestIndex = 1;
 var lastStylingChangeTime = 0;
 var lastErrorArrowAppeared = 0;
+var userHintWindow = undefined;
 var METRICQ_URL = "https://grafana.metricq.zih.tu-dresden.de/metricq/query";
 var uiOptions = {
   horizontalScrolling: false,
@@ -142,8 +143,8 @@ function initializeStyleOptions()
     textareaEle.setAttribute("rows", "13");
     textareaEle.setAttribute("cols", "60");
     textareaEle.setAttribute("class", "style_options_list_styles");
-    textareaEle.style.float = "left";
     textareaEle.value = formatJson(JSON.stringify(stylingOptions.list[i]));
+    textareaEle.style.float = "left";
     textareaEle.addEventListener("keyup", stylingHasChanged);
     var closeButton = document.createElement("button");
     closeButton.appendChild(document.createTextNode("entfernen"));
@@ -154,7 +155,7 @@ function initializeStyleOptions()
     curTab.appendChild(wrapperEle);
   }
 
-  curTab = stylingTabs.addTab("determineColorForMetric(metricBaseName)");
+  curTab = stylingTabs.addTab("detleftermineColorForMetric(metricBaseName)");
   textareaEle = document.createElement("textarea");
   textareaEle.setAttribute("rows", "13");
   textareaEle.setAttribute("cols", "80");
@@ -358,8 +359,8 @@ function putErrorMarkerAt(textareaErrorHappened, lineAt, columnAt)
     return;
   }
   lastErrorArrowAppeared = curTime;
-  var x = textareaErrorHappened.parentNode.parentNode.parentNode.offsetLeft + columnAt * 6;
-  var y = textareaErrorHappened.offsetTop + lineAt * 16;
+  var x = textareaErrorHappened.parentNode.parentNode.parentNode.parentNode.offsetLeft + columnAt * 6;
+  var y = textareaErrorHappened.parentNode.offsetTop + lineAt * 16;
   var arrowEle = document.createElement("div");
   arrowEle.style.position = "absolute";
   arrowEle.style.fontSize = "24pt";
@@ -461,7 +462,10 @@ function uiInteractZoomIn(evtObj)
       posEnd = posStart;
       posStart = swap;
     }
-    mainGraticule.setTimeRange([posStart[0], posEnd[0]]);
+    if(!mainGraticule.setTimeRange([posStart[0], posEnd[0]]))
+    {
+      showUserHint("Zoom-Limit erreicht.");
+    }
     mainGraticule.automaticallyDetermineRanges(false, true, metricParams.allTimeReference);
     setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 200);
     mainGraticule.draw(false);
@@ -479,10 +483,16 @@ function uiInteractZoomWheel(evtObj)
     var deltaRange = mainGraticule.curTimeRange[1] - mainGraticule.curTimeRange[0];
     if(0 > evtObj.deltaX)
     {
-      mainGraticule.setTimeRange([mainGraticule.curTimeRange[0] - deltaRange * 0.2, mainGraticule.curTimeRange[1] - deltaRange * 0.2]);
+      if(!mainGraticule.setTimeRange([mainGraticule.curTimeRange[0] - deltaRange * 0.2, mainGraticule.curTimeRange[1] - deltaRange * 0.2]))
+      {
+        showUserHint("Zoom-Limit erreicht.");
+      }
     } else if(0 < evtObj.deltaX)
     {
-      mainGraticule.setTimeRange([mainGraticule.curTimeRange[0] + deltaRange * 0.2, mainGraticule.curTimeRange[1] + deltaRange * 0.2]);
+      if(!mainGraticule.setTimeRange([mainGraticule.curTimeRange[0] + deltaRange * 0.2, mainGraticule.curTimeRange[1] + deltaRange * 0.2]))
+      {
+        showUserHint("Zoom-Limit erreicht.");
+      }
     }
     setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 200);
     mainGraticule.draw(false);
@@ -501,7 +511,10 @@ function uiInteractZoomWheel(evtObj)
     var curTimeValue = mainGraticule.getTimeValueAtPoint(curPos);
     if(curTimeValue)
     {
-      mainGraticule.zoomTimeAndValueAtPoint(curTimeValue, scrollDirection, true, false);
+      if(!mainGraticule.zoomTimeAndValueAtPoint(curTimeValue, scrollDirection, true, false))
+      {
+        showUserHint("Konnte nicht weiter zoomen, Limit erreicht");
+      }
       mainGraticule.automaticallyDetermineRanges(false, true, metricParams.allTimeReference);
       setTimeout(function (lastUpdateTime) { return function() { updateAllSeriesesBands(lastUpdateTime); }; }(mainGraticule.lastRangeChangeTime), 150);
       mainGraticule.draw(false);
@@ -999,6 +1012,47 @@ function calculateScrollOffset(curLevelElement)
   scrollOffset[0] += curLevelElement.scrollLeft;
   scrollOffset[1] += curLevelElement.scrollTop;
   return scrollOffset;
+}
+function showUserHint(messageText, showDuration)
+{
+  if(undefined === showDuration)
+  {
+    showDuration = 2000 + messageText.length * 50;
+  }
+  if(userHintWindow && userHintWindow.parentNode)
+  {
+    userHintWindow.parentNode.removeChild(userHintWindow);
+    userHintWindow = undefined;
+  }
+  var windowWidth = 10 + Math.min(messageText.length, 80) * 7;
+  if(windowWidth > window.innerWidth)
+  {
+    windowWidth = window.innerWidth;
+  }
+  var windowHeight = Math.ceil(messageText.length / 80) * 27;
+
+  var windowEle = document.createElement("div");
+  windowEle.style.position = "fixed";
+  windowEle.style.left = Math.floor(window.innerWidth / 2 - windowWidth /2);
+  windowEle.style.top  = Math.floor(window.innerHeight / 2 - windowHeight / 2);
+  windowEle.style.fontSize = "10pt";
+  windowEle.style.border = "1px solid #000000";
+  windowEle.style.borderRadius = "18px";
+  windowEle.style.padding = "3px 6px 3px 6px";
+  windowEle.style.width = windowWidth;
+  windowEle.style.height = windowHeight;
+  windowEle.style.backgroundColor = "#fdfddb";
+  windowEle.appendChild(document.createTextNode(messageText));
+  userHintWindow = windowEle = document.getElementsByTagName("body")[0].appendChild(windowEle);
+  setTimeout(function(hintEle) { return function() {
+    if(hintEle)
+    {
+      hintEle.animate([{ opacity: 1 }, { opacity: 0.01 }],
+                      { duration: 1200,
+                        iterations: 1 });
+    }
+  }; }(windowEle), showDuration - 1200);
+  setTimeout(function(hintEle) { return function() { if(hintEle && hintEle.parentNode) { hintEle.parentNode.removeChild(hintEle); } }; }(windowEle), showDuration);
 }
 var mouseDown = {
   startPos: undefined,
