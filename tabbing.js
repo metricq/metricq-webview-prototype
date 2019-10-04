@@ -14,7 +14,6 @@ function Tabbing(paramParentElement, paramTabSize)
   {
     this.headArea = document.createElement("div");
     this.headArea.setAttribute("class", "tabbing_header");
-    this.headArea.style.fontSize = "14pt";
     this.headArea.style.height = "40px";
     if(this.tabSize && this.tabSize[0])
     {
@@ -278,7 +277,6 @@ function TabHeading(paramTabbingObj, tabName)
   }
   this.headingEle = document.createElement("div");
   this.headingEle.style.display = "inline-block";
-  this.headingEle.style.fontSize = "16pt";
   this.defaultMargins = [0, 10, 0, 5];
   this.defaultPaddings = [5, 0, 0, 5];
   this.borderWidth = 2;

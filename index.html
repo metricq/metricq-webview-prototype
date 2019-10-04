@@ -43,6 +43,7 @@ body {
 }
 .tabbing_header {
   font-family: Sans;
+  font-size: 10pt;
   background-image: linear-gradient(to bottom, #ffffff 0px, #ffffa0 5px, #f0e000 20px);
 }
 .tab_head_focused {
@@ -164,13 +165,14 @@ body {
     </div>
     <div class="cleaner"> &nbsp; </div>
     <div class="field_description"><label for="metric_request_every_that_many_pixels">Alle x Pixel Wert anfordern</label></div>
-    <div class="field_inputs"><input type="number" name="metric_request_every_that_many_pixels" id="metric_request_every_that_many_pixels" size="5" value="3" min="0.1" max="1000" step="0.2" /></div>
-    <div class="field_description"><label>More parameters</label></div></div>
+    <div class="field_inputs"><input type="number" name="metric_request_every_that_many_pixels" id="metric_request_every_that_many_pixels" size="5" placeholder="3" value="3" min="0.1" max="1000" step="0.2" /></div>
+    <div class="field_description"><label>Noch mehr Einstellungen</label></div></div>
     <div class="field_inputs">
-      <input type="checkbox" name="metric_all_time" id="metric_all_time" title="Take all time min/max as scaling reference" checked="checked" />
+      <input type="checkbox" name="metric_all_time" id="metric_all_time" title="Verwende All-Zeit-Min/Max als Skalierungs-Referenz" checked="checked" />
+      <input type="checkbox" name="metric_load_more" id="metric_load_more" title="Lade zusätzliche Daten für flüssiges Zoomen" checked="checked" />
     </div>
     <div class="cleaner"> &nbsp; </div>
-    <button onclick="submitMetricName()">Fetch</button>
+    <button onclick="submitMetricName()">Nachladen</button>
   </div>
   <div class="style_options_wrapper">
   </div>

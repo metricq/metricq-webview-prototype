@@ -11,7 +11,8 @@ var lastStylingChangeTime = 0;
 var METRICQ_URL = "https://grafana.metricq.zih.tu-dresden.de/metricq/query";
 var uiOptions = {
   horizontalScrolling: false,
-  smoothScrollingExtraData: true
+  smoothScrollingExtraData: true,
+  minimumXPixels: 0.5
 };
 var uiInteractArr = [
   ["drag", ["17"], "uiInteractPan"],
@@ -734,7 +735,7 @@ function createChart()
 }
 function calcMaxDataPoints(metricFrom, metricTo)
 {
-  var xPixelRequest = parseFloat(document.getElementsByName("metric_request_every_that_many_pixels")[0].value);
+  var xPixelRequest = metricParams.getPixels();
   var countOfDataPoints = Math.floor((canvasDimensions[0] - canvasSpaceLeftTop[0]) / xPixelRequest);
   return countOfDataPoints;
 }
@@ -917,8 +918,8 @@ function fetchMeasureData(timeStart, timeEnd, maxDataPoints, metricToFetch, call
       }
       timers.ajax.push(obj.target.timers.ajax.done - obj.target.timers.ajax.presend);
       timers.endpoint.push(obj.target.timers.endpoint.duration);
-      timers.db.push(obj.target.timers.db.duration);
-      timers.db_http.push(obj.target.timers.db_http.duration);
+      if(obj.target.timers.db) timers.db.push(obj.target.timers.db.duration);
+      if(obj.target.timers.db_http) timers.db_http.push(obj.target.timers.db_http.duration);
       timers.parsing.push(obj.target.timers.parsing.end - obj.target.timers.parsing.start);
     }
   };}(callbackFunc);

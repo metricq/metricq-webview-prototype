@@ -25,6 +25,7 @@ var metricParams = {
     metricParams.fields["names"] = document.querySelector(".metric_names");
     metricParams.fields["pixels"] = document.getElementsByName("metric_request_every_that_many_pixels")[0];
     metricParams.fields["all_time"] = document.getElementsByName("metric_all_time")[0];
+    metricParams.fields["load_more"] = document.getElementsByName("metric_load_more")[0];
     metricParams.fields["to_date"].addEventListener("change",function(evt){
       var fromEle = metricParams.fields["from_date"];
       fromEle.setAttribute("max", evt.target.value);
@@ -37,6 +38,9 @@ var metricParams = {
       metricParams.allTimeReference = !! evtObj.target.checked;
       mainGraticule.automaticallyDetermineRanges(false, true, metricParams.allTimeReference);
       mainGraticule.draw(false);
+    });
+    metricParams.fields["load_more"].addEventListener("change", function(evtObj) {
+      uiOptions.smoothScrollingExtraData = !!evtObj.target.checked;
     });
     metricParams.allTimeReference = !!metricParams.fields["all_time"].checked;
 
@@ -78,7 +82,23 @@ var metricParams = {
   },
   getPixels: function()
   {
-    return parseFloat(metricParams.fields["pixels"].value);
+    var valueString = metricParams.fields["pixels"].value;
+    valueString = valueString.replace(/,/g, ".");
+    var valueNumber = parseFloat(valueString);
+console.log(valueNumber);
+    if(isNaN(valueNumber))
+    {
+      valueNumber = parseFloat(metricParams.fields["pixels"].getAttribute("placeholder"));
+    } else
+    {
+      if(valueNumber < uiOptions.minimumXPixels)
+      {
+        valueNumber = uiOptions.minimumXPixels;
+      }
+    }
+    metricParams.fields["pixels"].value = "" + valueNumber;
+    
+    return valueNumber;
   },
   setPixels: function(pixelValue)
   {
