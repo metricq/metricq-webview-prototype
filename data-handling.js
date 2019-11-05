@@ -287,7 +287,7 @@ function MetricCache(paramMetricName)
       {
         this.band.addPoint(minSeries.points[i].clone());
       }
-      this.band.switchOverIndex = this.band.points.length;
+      this.band.setSwitchOverIndex();
       var maxSeries = this.series["max"];
       for(var i = maxSeries.points.length - 1; i >= 0; --i)
       {
@@ -406,6 +406,10 @@ function Band(paramStyleOptions)
   {
     this.points.push(newPoint);
     return newPoint;
+  }
+  this.setSwitchOverIndex = function()
+  {
+    this.switchOverIndex = this.points.length;
   }
   this.getTimeRange = function()
   {

@@ -721,6 +721,9 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
                   this.ctx.lineTo(x, previousY);
                   this.ctx.lineTo(x, y);
                 }
+              } else if(j == switchOverIndex)
+              {
+                 this.ctx.lineTo(x, y);
               } else
               {
                 // connect last
