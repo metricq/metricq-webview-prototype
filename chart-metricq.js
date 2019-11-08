@@ -5,8 +5,6 @@ var canvasDimensions = [window.innerWidth - 100, 500]
 var canvasSpaceLeftTop = [45, 40];
 var mainGraticule;
 var timers = new Object();
-var ajaxOpenRequests = new Array();
-var ajaxRequestIndex = 1;
 var lastStylingChangeTime = 0;
 var lastErrorArrowAppeared = 0;
 var userHintWindow = undefined;
@@ -88,6 +86,9 @@ function init()
   registerCallbacks();
   initializeGraticule();
   metricParams.init();
+  AjaxAccountant.setTimeoutHandler(1000, function (req) {
+    showUserHint("Request for \"" + req.requestDescription + "\" aborted, it took longer than " + AjaxAccountant.timeoutDuration + " ms.");
+  });
   metricParams.setTimeFields(new Date((new Date()).getTime() - 7200000), new Date());
   if(-1 < location.href.indexOf("#/"))
   {
@@ -903,12 +904,8 @@ function fetchMeasureData(timeStart, timeEnd, maxDataPoints, metricToFetch, call
     "count"
   ];
 
-  var curRequestId = ajaxRequestIndex ++;
-  ajaxOpenRequests.push(curRequestId);
-  var req = new XMLHttpRequest();
-  req.requestId = curRequestId;
-  var url = METRICQ_URL;
-  req.open("POST", url, true);
+  var req = AjaxAccountant.newRequest("POST", METRICQ_URL, metricToFetch);
+
   req.onreadystatechange = function (callMe) { return function(obj) {
     if(1 == obj.target.readyState)
     {
@@ -952,14 +949,7 @@ function fetchMeasureData(timeStart, timeEnd, maxDataPoints, metricToFetch, call
         callMe(jsonObj);
       }
       obj.target.timers.parsing.end = (new Date()).getTime();
-      for(var i = 0; i < ajaxOpenRequests.length; ++i)
-      {
-        if(obj.target.requestId == ajaxOpenRequests[i])
-        {
-          ajaxOpenRequests.splice(i, 1);
-          break;
-        }
-      }
+      AjaxAccountant.deleteRequest(obj.target);
       timers.ajax.push(obj.target.timers.ajax.done - obj.target.timers.ajax.presend);
       timers.endpoint.push(obj.target.timers.endpoint.duration);
       if(obj.target.timers.db) timers.db.push(obj.target.timers.db.duration);
@@ -984,11 +974,11 @@ function fetchMeasureData(timeStart, timeEnd, maxDataPoints, metricToFetch, call
       }
     ]
   };
-  req.send(JSON.stringify(requestJson));
+  AjaxAccountant.sendRequest(req, JSON.stringify(requestJson));
 }
 function allAjaxCompletedWatchdog()
 {
-  if(0 == ajaxOpenRequests.length)
+  if(0 == AjaxAccountant.reqArray.length)
   {
     if(mainGraticule)
     {
