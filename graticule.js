@@ -456,7 +456,203 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
         parsedObj.pointWidth = parseFloat(styleOptions.width);
         parsedObj.halfPointWidth = Math.floor(styleOptions.width / 2.00);
       }
-      parsedObj.drawDots = !! styleOptions.dots;
+      if(styleKeys.includes("dots"))
+      {
+        parsedObj.drawDots = {
+          func: function (ctx, width, height)
+          {
+            ctx.fillRect(0, 0, width, height);
+          }
+        };
+        if("string" == (typeof styleOptions.dots))
+        {
+          var dotMarker = styleOptions.dots.charAt(0);
+          switch(dotMarker)
+          {
+            case ".": /* point marker */
+              var referencedLineWidth = parsedObj.pointWidth;
+              if(styleKeys.includes("lineWidth"))
+              {
+                referencedLineWidth = parseFloat(styleOptions.lineWidth);
+              }
+              parsedObj.drawDots.func = function (lineWidth) {
+                return function(ctx, width, height)
+                {
+                  ctx.beginPath();
+                  ctx.arc(width / 2,
+                          height / 2,
+                          lineWidth / 2,
+                          0,
+                          Math.PI * 2,
+                          true);
+                  ctx.fill();
+                }
+              }(referencedLineWidth);
+              break;
+            case "o": /* circle marker */
+              parsedObj.drawDots.func = function(ctx, width, height)
+              {
+                ctx.beginPath();
+                ctx.arc(width / 2,
+                        height / 2,
+                        Math.min(width, height) / 2,
+                        0,
+                        Math.PI * 2,
+                        true);
+                ctx.fill();
+              };
+              break;
+            case "v": /* triangle down marker */
+            case "1": /* fall-through */
+              parsedObj.drawDots.func = function(ctx, width, height)
+              {
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(width / 2, height);
+                ctx.lineTo(width, 0);
+                ctx.closePath();
+                ctx.fill();
+              }
+              break;
+            case "^": /* triangle up marker */
+            case "2": /* fall-through */
+              parsedObj.drawDots.func = function(ctx, width, height)
+              {
+                ctx.beginPath();
+                ctx.moveTo(0, height);
+                ctx.lineTo(width, height);
+                ctx.lineTo(width / 2, 0);
+                ctx.closePath();
+                ctx.fill();
+              }
+              break;
+            case "<": /* triangle left marker */
+            case "3": /* fall-through */
+              parsedObj.drawDots.func = function(ctx, width, height)
+              {
+                ctx.beginPath();
+                ctx.moveTo(0, height / 2);
+                ctx.lineTo(width, height);
+                ctx.lineTo(width, 0);
+                ctx.closePath();
+                ctx.fill();
+              }
+              break;
+            case ">": /* triangle right marker */
+            case "4": /* fall-through */
+              parsedObj.drawDots.func = function(ctx, width, height)
+              {
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(width, height / 2);
+                ctx.lineTo(0, height);
+                ctx.closePath();
+                ctx.fill();
+              }
+              break;
+            case "s": /* square marker */
+              // Don't need to do anything here
+              // it is already defined as default
+              break;
+            case "p": /* pentagon marker */
+              parsedObj.drawDots.func = function(ctx, width, height)
+              {
+                ctx.beginPath();
+                ctx.moveTo(width / 2, 0);
+                ctx.lineTo(width, height * 2 / 5);
+                ctx.lineTo(width * 3 / 4, height);
+                ctx.lineTo(width * 1 / 4, height);
+                ctx.lineTo(0, height * 2 / 5);
+                ctx.closePath();
+                ctx.fill();
+              }
+              break;
+            case "*": /* star marker */
+              parsedObj.drawDots.func = function(ctx, width, height)
+              {
+                ctx.moveTo(width / 2, 0);
+                ctx.lineTo(width / 2, height);
+                ctx.stroke();
+                ctx.moveTo(0, height / 2);
+                ctx.lineTo(width, height / 2);
+                ctx.stroke();
+                ctx.moveTo(width * 1 / 7, height * 1 / 7);
+                ctx.lineTo(width * 6 / 7, height * 6 / 7);
+                ctx.stroke();
+                ctx.moveTo(width * 1 / 7, height * 6 / 7);
+                ctx.lineTo(width * 6 / 7, height * 1 / 7);
+                ctx.stroke();
+              }
+              break;
+            case "h": /* hexagon marker */
+              parsedObj.drawDots.func = function(ctx, width, height)
+              {
+                ctx.beginPath();
+                ctx.moveTo(0, height / 2);
+                ctx.lineTo(width * 1 / 4, 0);
+                ctx.lineTo(width * 3 / 4, 0);
+                ctx.lineTo(width, height / 2);
+                ctx.lineTo(width * 3 / 4, height);
+                ctx.lineTo(width * 1 / 4, height);
+                ctx.closePath();
+                ctx.fill();
+              }
+              break;
+            case "+": /* plus marker */
+              parsedObj.drawDots.func = function(ctx, width, height)
+              {
+                ctx.moveTo(width / 2, 0);
+                ctx.lineTo(width / 2, height);
+                ctx.stroke();
+                ctx.moveTo(0, height / 2);
+                ctx.lineTo(width, height / 2);
+                ctx.stroke();
+              }
+              break;
+            case "x": /* x marker */
+              parsedObj.drawDots.func = function(ctx, width, height)
+              {
+                ctx.moveTo(width * 1 / 7, height * 1 / 7);
+                ctx.lineTo(width * 6 / 7, height * 6 / 7);
+                ctx.stroke();
+                ctx.moveTo(width * 1 / 7, height * 6 / 7);
+                ctx.lineTo(width * 6 / 7, height * 1 / 7);
+                ctx.stroke();
+              }
+              break;
+            case "d": /* diamond marker */
+              parsedObj.drawDots.func = function(ctx, width, height)
+              {
+                ctx.beginPath();
+                ctx.moveTo(0, height / 2);
+                ctx.lineTo(width / 2, 0);
+                ctx.lineTo(width, height / 2);
+                ctx.lineTo(width / 2, height);
+                ctx.closePath();
+                ctx.fill();
+              }
+              break;
+            case "|": /* vline marker */
+              parsedObj.drawDots.func = function(ctx, width, height)
+              {
+                ctx.moveTo(width / 2, 0);
+                ctx.lineTo(width / 2, height);
+                ctx.stroke();
+              }
+              break;
+            case "_": /* hline marker */
+              parsedObj.drawDots.func = function(ctx, width, height)
+              {
+                ctx.moveTo(0, height / 2);
+                ctx.lineTo(width, height / 2);
+                ctx.stroke();
+              }
+              break;
+          }
+        } else if(!styleOptions.dots) {
+          parsedObj.drawDots = false;
+        }
+      }
 
       // second parse Options to be applied to ctx immediatly
       if(styleOptions.color)
@@ -764,6 +960,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
             this.resetCtx();
             continue;
           }
+          var offsiteCanvas = this.generateOffsiteDot(styleOptions);
           
           for(var j = 0,x,y,previousX,previousY; j < curSeries.points.length; ++j)
           {
@@ -796,7 +993,8 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
             }
             if(1 == curSeries.points[j].count || (styleOptions.drawDots && 0 != curSeries.points[j].count))
             {
-              this.ctx.fillRect(x - styleOptions.halfPointWidth, y - styleOptions.halfPointWidth, styleOptions.pointWidth, styleOptions.pointWidth);
+              //this.ctx.fillRect(x - styleOptions.halfPointWidth, y - styleOptions.halfPointWidth, styleOptions.pointWidth, styleOptions.pointWidth);
+              this.ctx.drawImage(offsiteCanvas.ele, x + offsiteCanvas.offsetX, y + offsiteCanvas.offsetY);
             }
             previousX = x;
             previousY = y;
@@ -808,9 +1006,37 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
           }
           // reset ctx style options
           this.resetCtx();
+          offsiteCanvas.ele.parentNode.removeChild(offsiteCanvas.ele);
         }
       }
     }
+  };
+  this.generateOffsiteDot = function(styleOptions)
+  {
+    var BODY = document.getElementsByTagName("body")[0];
+    var canvas = document.createElement("canvas");
+    var ctxDimensions = [styleOptions.pointWidth,
+                         styleOptions.pointWidth];
+    canvas.width = ctxDimensions[0];
+    canvas.height = ctxDimensions[1];
+    canvas.style.display = "none";
+    BODY.appendChild(canvas);
+    var canvasCtx = canvas.getContext("2d");
+    if(styleOptions.drawDots)
+    {
+      canvasCtx.lineWidth = 1;
+      canvasCtx.fillStyle = styleOptions.color;
+      canvasCtx.strokeStyle = styleOptions.color;
+      styleOptions.drawDots.func(canvasCtx, ctxDimensions[0], ctxDimensions[1]);
+    }
+    return {
+      "ele": canvas,
+      "ctx": canvasCtx,
+      "width": ctxDimensions[0],
+      "height": ctxDimensions[1],
+      "offsetX": (ctxDimensions[0] / 2) * -1,
+      "offsetY": (ctxDimensions[1] / 2) * -1
+    };
   };
   this.resetCtx = function()
   {
