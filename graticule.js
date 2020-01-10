@@ -418,6 +418,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
     var parsedObj = {
       "skip": false,
       "connect": 3,
+      "color": "#000000",
       "pointWidth": 2,
       "halfPointWidth": 1,
       "drawDots": false,
@@ -659,6 +660,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
       {
         this.ctx.fillStyle = styleOptions.color;
         this.ctx.strokeStyle = styleOptions.color;
+        parsedObj.color = styleOptions.color;
       }
       if(styleOptions.fillPattern)
       {
