@@ -393,11 +393,6 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
   };
   this.draw = function(adjustRanges)
   {
-    if(!this.data.hasSeriesToPlot() && !this.data.hasBandToPlot())
-    {
-      console.log("No series to plot");
-      return;
-    }
     timers.drawing = {
       start: (new Date()).getTime(),
       end: 0
@@ -416,9 +411,15 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
     this.ctx.rect(this.graticuleDimensions[0], this.graticuleDimensions[1],
                   this.graticuleDimensions[2], this.graticuleDimensions[3]);
     this.ctx.clip();
-    this.drawBands(this.curTimeRange, this.curValueRange, this.curTimePerPixel, this.curValuesPerPixel);
-    this.drawSeries(this.curTimeRange, this.curValueRange, this.curTimePerPixel, this.curValuesPerPixel);
-    this.ctx.restore();
+    if(!this.data.hasSeriesToPlot() && !this.data.hasBandToPlot())
+    {
+      console.log("No series to plot");
+    } else
+    {
+      this.drawBands(this.curTimeRange, this.curValueRange, this.curTimePerPixel, this.curValuesPerPixel);
+      this.drawSeries(this.curTimeRange, this.curValueRange, this.curTimePerPixel, this.curValuesPerPixel);
+      this.ctx.restore();
+    }
     timers.drawing.end = (new Date()).getTime();
     showTimers();
   }
