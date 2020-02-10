@@ -8,7 +8,6 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
   this.curValuesPerPixel = undefined;
   this.pixelsLeft = paramPixelsLeft;
   this.pixelsBottom = paramPixelsBottom;
-  this.dataCache = new DataCache()
   this.clearSize = paramClearSize;
   this.lastRangeChangeTime = 0;
   this.data = new DataCache();
@@ -233,23 +232,33 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
       } else if((deltaRange / (stepSize * 10)) < maxStepsAllowed)
       {
         stepSize *= 10;
+        powerTen += 1;
       }
     } else if((deltaRange / stepSize * 5) < maxStepsAllowed)
     {
       if((deltaRange / (stepSize / 10)) < maxStepsAllowed)
       {
         stepSize /= 10;
+        powerTen -= 1;
       }
       if((deltaRange / (stepSize / 2)) < maxStepsAllowed)
       {
         stepSize /= 2;
+        powerTen -= 1;
       }
     }
     var firstStep = rangeStart - (rangeStart % stepSize);
-    var stepsArr = new Array()
-    for(var i = firstStep; i < rangeEnd; i+=stepSize)
+    var stepsArr = new Array();
+    for(var i = 0, curVal = 0; firstStep + (i * stepSize) < rangeEnd; i++)
     {
-      stepsArr.push(i);
+      curVal = firstStep + (i * stepSize);
+      if(0 > powerTen)
+      {
+        stepsArr.push([curVal, "" + curVal.toFixed(powerTen * -1)]);
+      } else
+      {
+        stepsArr.push([curVal, "" + curVal]);
+      }
     }
     return stepsArr;
   };
@@ -275,7 +284,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
     var yPositions = new Array();
     for(var i = 0; i < yAxisSteps.length; ++i)
     {
-      var y = Math.round(this.graticuleDimensions[3] - ((yAxisSteps[i] - valueRange[0]) / valuesPerPixel) + this.graticuleDimensions[1]);
+      var y = Math.round(this.graticuleDimensions[3] - ((yAxisSteps[i][0] - valueRange[0]) / valuesPerPixel) + this.graticuleDimensions[1]);
       yPositions.push(y);
       if(y >= this.graticuleDimensions[1])
       {
@@ -294,7 +303,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
     {
       if(yPositions[i] >= this.graticuleDimensions[1])
       {
-        this.ctx.fillText(yAxisSteps[i], this.graticuleDimensions[0] - this.pixelsLeft, yPositions[i] + 4);
+        this.ctx.fillText(yAxisSteps[i][1], this.graticuleDimensions[0] - this.pixelsLeft, yPositions[i] + 4);
       }
     }
   };
@@ -500,7 +509,7 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
                         0,
                         Math.PI * 2,
                         true);
-                ctx.fill();
+                ctx.stroke();
               };
               break;
             case "v": /* triangle down marker */
