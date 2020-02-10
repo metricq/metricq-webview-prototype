@@ -1060,12 +1060,12 @@ function Graticule(ctx, offsetDimension, paramPixelsLeft, paramPixelsBottom, par
   };
   this.figureOutValueRange = function (allTimeValueRanges)
   {
-    var valueRange = this.data.getValueRange(allTimeValueRanges);
+    var valueRange = this.data.getValueRange(allTimeValueRanges, this.curTimeRange[0], this.curTimeRange[1]);
     if(undefined !== valueRange[0])
     {
       // add wiggle room
-      valueRange[0] -= (valueRange[1] - valueRange[0]) * 0.10;
-      valueRange[1] += (valueRange[1] - valueRange[0]) * 0.10;
+      valueRange[0] -= (valueRange[1] - valueRange[0]) * 0.08;
+      valueRange[1] += (valueRange[1] - valueRange[0]) * 0.04;
     }
     return valueRange;
   };

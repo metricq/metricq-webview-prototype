@@ -125,7 +125,7 @@ function DataCache()
     }
     return [min, max];
   }
-  this.getValueRange = function(doGetAllTime)
+  this.getValueRange = function(doGetAllTime, timeRangeStart, timeRangeEnd)
   {
     var min = undefined,
         max = undefined;
@@ -148,20 +148,23 @@ function DataCache()
         {
           if(this.metrics[i].series[curAggregate])
           {
-            var curTimeRange = this.metrics[i].series[curAggregate].getValueRange();
-            if(undefined === min)
+            var curValueRange = this.metrics[i].series[curAggregate].getValueRange(timeRangeStart, timeRangeEnd);
+            if(undefined !== curValueRange)
             {
-              min = curTimeRange[0];
-              max = curTimeRange[1];
-            } else
-            {
-              if(min > curTimeRange[0])
+              if(undefined === min)
               {
-                min = curTimeRange[0];
-              }
-              if(max < curTimeRange[1])
+                min = curValueRange[0];
+                max = curValueRange[1];
+              } else
               {
-                max = curTimeRange[1];
+                if(min > curValueRange[0])
+                {
+                  min = curValueRange[0];
+                }
+                if(max < curValueRange[1])
+                {
+                  max = curValueRange[1];
+                }
               }
             }
           }
@@ -594,21 +597,48 @@ function Series(paramAggregate, paramStyleOptions)
       return [this.points[0].time, this.points[this.points.length - 1].time];
     }
   }
-  this.getValueRange = function()
+  this.getValueRange = function(timeRangeStart, timeRangeEnd)
   {
     if(0 == this.points.length)
     {
-      return [0, 0];
+      return undefined;
     }
     var min = this.points[0].value, max = this.points[0].value;
-    for(var i = 1; i < this.points.length; ++i)
+    if(undefined !== timeRangeStart && undefined !== timeRangeEnd)
     {
-      if(this.points[i].value < min)
+      var i = 0;
+      for (i = 0; i < this.points.length; ++i)
+      {
+        if(this.points[i].time >= timeRangeStart)
+        {
+          break;
+        }
+      }
+      if(i < this.points.length)
       {
         min = this.points[i].value;
-      } else if(this.points[i].value > max)
-      {
         max = this.points[i].value;
+      }
+      for(; (i < this.points.length && this.points[i].time < timeRangeEnd); ++i)
+      {
+        if(this.points[i].value < min)
+        {
+          min = this.points[i].value;
+        } else if(this.points[i].value > max)
+        {
+          max = this.points[i].value;
+        }
+      }
+    } else {
+      for(var i = 1; i < this.points.length; ++i)
+      {
+        if(this.points[i].value < min)
+        {
+          min = this.points[i].value;
+        } else if(this.points[i].value > max)
+        {
+          max = this.points[i].value;
+        }
       }
     }
     return [min, max];
